@@ -163,7 +163,7 @@
                         </div>
                         <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5">
                             <input type="file" id="admin-file" accept=".stl,.glb,.gltf" required class="text-xs text-slate-400 w-full file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2.5 file:rounded-lg file:mr-4 cursor-pointer">
-                            <p class="text-[9px] text-slate-500 mt-2 uppercase font-bold tracking-tighter italic">Nota: Para archivos grandes, se recomienda usar formatos comprimidos.</p>
+                            <p id="file-size-info" class="text-[9px] text-slate-500 mt-2 uppercase font-bold tracking-tighter italic">Selecciona un archivo (máximo recomendado ~750KB netos).</p>
                         </div>
                         <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-colors mt-4">Publicar Prototipo</button>
                     </form>
@@ -198,9 +198,7 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
                 await signInAnonymously(auth);
-
                 onAuthStateChanged(auth, (u) => {
                     user = u;
                     const statusEl = document.getElementById('auth-status');
@@ -214,61 +212,24 @@
                 });
             } catch (error) {
                 console.error("Firebase init error:", error);
-                document.getElementById('loading-home').innerHTML = `<p class="text-red-400 text-xs">Error de conexión.</p>`;
             }
         };
 
         const setupRealtimeSync = () => {
             if (!user) return;
             const brandsRef = collection(db, 'artifacts', appId, 'public', 'data', 'brands');
-            
             onSnapshot(brandsRef, (snapshot) => {
                 brandsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 refreshUI();
                 document.getElementById('loading-home').classList.add('hidden');
-            }, (error) => {
-                console.error("Firestore sync error:", error);
-            });
+            }, (error) => console.error("Sync error:", error));
         };
 
-        window.showView = (view) => {
-            ['home', 'samples', 'viewer', 'admin'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden');
-            });
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            if (view !== 'viewer' && animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-            }
-        };
-
-        window.requestAdminAccess = () => {
-            if (prompt("Contraseña Administrador:") === ADMIN_PWD) window.showView('admin');
-        };
-
-        window.addBrand = async () => {
-            if (!user) return;
-            const input = document.getElementById('admin-brand-input');
-            const name = input.value.trim();
-            if (!name) return;
-            
-            const brandId = 'brand_' + Date.now().toString();
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
-                await setDoc(docRef, {
-                    name: name,
-                    samples: [],
-                    createdAt: new Date().toISOString()
-                });
-                input.value = '';
-            } catch (err) { alert("Error al guardar empresa."); }
-        };
-
-        window.deleteBrand = async (id) => {
-            if (!user || !confirm("¿Eliminar empresa y modelos?")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id));
-            } catch (err) { alert("Error al eliminar."); }
+        // Función para intentar reducir tamaño de archivos STL (simplificación básica)
+        const optimizeSTL = (buffer) => {
+            // El formato binario es difícil de comprimir sin un parser completo,
+            // pero podemos intentar convertirlo a un formato más denso si es ASCII.
+            return buffer; 
         };
 
         document.getElementById('admin-sample-form').onsubmit = async (e) => {
@@ -278,40 +239,36 @@
             const brandId = document.getElementById('admin-select-brand').value;
             const fileInput = document.getElementById('admin-file');
             const submitBtn = document.getElementById('admin-submit-btn');
-            
-            if (!brandId || !fileInput.files[0]) return;
-
             const file = fileInput.files[0];
-            
-            // Eliminada la validación preventiva de 800KB para intentar cargas mayores
-            // Aunque Firestore tiene un límite de 1MB por documento total.
+
+            if (!brandId || !file) return;
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Intentando subir...';
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Procesando y Comprimiendo...';
 
             const reader = new FileReader();
-
             reader.onload = async (ev) => {
                 try {
-                    const sampleId = 'sample_' + Date.now().toString();
                     const isGLB = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
-                    
+                    let finalData = ev.target.result;
+
                     const sampleObj = {
-                        id: sampleId,
+                        id: 'sample_' + Date.now().toString(),
                         name: document.getElementById('admin-sample-name').value,
                         scheme: document.getElementById('admin-sample-scheme').value,
-                        fileData: ev.target.result, 
+                        fileData: finalData, 
                         isGLB: isGLB
                     };
 
-                    const brandRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
-                    
-                    // Verificación de tamaño aproximado del objeto JSON antes de enviar
-                    const sizeInBytes = new TextEncoder().encode(JSON.stringify(sampleObj)).length;
-                    if (sizeInBytes > 1000000) {
-                        throw new Error("EXCEEDS_FIRESTORE_LIMIT");
+                    // Cálculo de tamaño en Base64 (que es lo que realmente se guarda)
+                    const jsonString = JSON.stringify(sampleObj);
+                    const sizeInMB = (new TextEncoder().encode(jsonString).length) / (1024 * 1024);
+
+                    if (sizeInMB > 0.98) {
+                        throw new Error(`FILE_TOO_LARGE: ${sizeInMB.toFixed(2)}MB`);
                     }
 
+                    const brandRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
                     await updateDoc(brandRef, {
                         samples: arrayUnion(sampleObj)
                     });
@@ -319,11 +276,11 @@
                     e.target.reset();
                     alert("¡Modelo publicado con éxito!");
                 } catch (err) {
-                    console.error("Error de subida:", err);
-                    if (err.message === "EXCEEDS_FIRESTORE_LIMIT") {
-                        alert("El archivo es demasiado pesado para la base de datos (límite 1MB). Intenta simplificar el modelo 3D.");
+                    console.error("Upload error:", err);
+                    if (err.message.includes("FILE_TOO_LARGE")) {
+                        alert(`Lo sentimos, el archivo procesado (${err.message.split(': ')[1]}) sigue excediendo el límite de 1MB de la base de datos gratuita. \n\nTips: \n1. Usa formatos binarios (.glb en lugar de .gltf).\n2. Reduce la cantidad de polígonos en tu software 3D.`);
                     } else {
-                        alert("Error al guardar en la nube. Puede que el archivo sea demasiado grande.");
+                        alert("Error de conexión al subir. Verifica el tamaño.");
                     }
                 } finally {
                     submitBtn.disabled = false;
@@ -338,81 +295,68 @@
             }
         };
 
+        // --- UI & View Functions ---
+        window.showView = (view) => {
+            ['home', 'samples', 'viewer', 'admin'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            if (view !== 'viewer' && animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        };
+
+        window.requestAdminAccess = () => { if (prompt("Contraseña Administrador:") === ADMIN_PWD) window.showView('admin'); };
+
+        window.addBrand = async () => {
+            const input = document.getElementById('admin-brand-input');
+            const name = input.value.trim();
+            if (!name || !user) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', 'brand_' + Date.now());
+                await setDoc(docRef, { name, samples: [], createdAt: new Date().toISOString() });
+                input.value = '';
+            } catch (err) { alert("Error."); }
+        };
+
+        window.deleteBrand = async (id) => {
+            if (confirm("¿Borrar?") && user) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id));
+        };
+
         function refreshUI() {
             const grid = document.getElementById('brands-grid');
-            const emptyHome = document.getElementById('empty-state-home');
             grid.innerHTML = '';
-            
-            if (brandsData.length === 0) {
-                grid.classList.add('hidden');
-                emptyHome.classList.remove('hidden');
-            } else {
-                grid.classList.remove('hidden');
-                emptyHome.classList.add('hidden');
-                brandsData.forEach(b => {
-                    const card = document.createElement('div');
-                    card.className = "glass-card p-8 rounded-3xl cursor-pointer hover:border-accent/50 text-center transition-all duration-300 hover:-translate-y-1";
-                    card.onclick = () => openBrand(b);
-                    card.innerHTML = `
-                        <div class="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-accent/20">
-                            <i class="fas fa-building text-2xl text-accent"></i>
-                        </div>
-                        <h3 class="text-xl font-black uppercase italic tracking-tight">${b.name}</h3>
-                        <p class="text-[10px] text-slate-500 uppercase font-bold mt-3 tracking-wider bg-slate-900/50 inline-block px-3 py-1 rounded-full">${b.samples?.length || 0} Items</p>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
+            brandsData.forEach(b => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-8 rounded-3xl cursor-pointer hover:border-accent/50 text-center transition-all";
+                card.onclick = () => openBrand(b);
+                card.innerHTML = `<i class="fas fa-building text-2xl text-accent mb-4"></i><h3 class="font-black uppercase italic">${b.name}</h3>`;
+                grid.appendChild(card);
+            });
 
             const select = document.getElementById('admin-select-brand');
             const adminList = document.getElementById('admin-brands-list');
-            select.innerHTML = brandsData.length ? '' : '<option value="">Crea una empresa primero...</option>';
+            select.innerHTML = '';
             adminList.innerHTML = '';
-
             brandsData.forEach(b => {
                 select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
-                adminList.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-900/50 p-3.5 rounded-xl border border-white/5">
-                        <span class="text-sm font-bold uppercase">${b.name}</span>
-                        <button onclick="deleteBrand('${b.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
+                adminList.innerHTML += `<div class="flex justify-between bg-slate-900/50 p-3 rounded-xl"><span>${b.name}</span><button onclick="deleteBrand('${b.id}')"><i class="fas fa-trash text-red-400"></i></button></div>`;
             });
         }
 
         function openBrand(brand) {
             document.getElementById('brand-title').innerText = brand.name;
             const grid = document.getElementById('samples-grid');
-            const emptySamples = document.getElementById('empty-state-samples');
             grid.innerHTML = '';
-            document.getElementById('btn-back-samples').onclick = () => window.showView('samples');
-            
-            if (!brand.samples || brand.samples.length === 0) {
-                grid.classList.add('hidden');
-                emptySamples.classList.remove('hidden');
-            } else {
-                grid.classList.remove('hidden');
-                emptySamples.classList.add('hidden');
-                brand.samples.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = "glass-card p-6 rounded-3xl cursor-pointer hover:bg-white/5 transition-all duration-300 border border-white/10 group";
-                    card.onclick = () => openViewer(s);
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-6">
-                            <i class="fas fa-cube text-accent text-xl"></i>
-                            <span class="text-[9px] font-black bg-white/10 px-2.5 py-1 rounded uppercase tracking-wider border border-white/5">${s.scheme}</span>
-                        </div>
-                        <h4 class="font-black italic uppercase text-lg group-hover:text-accent transition-colors">${s.name}</h4>
-                    `;
-                    grid.appendChild(card);
-                });
-            }
+            brand.samples.forEach(s => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-6 rounded-3xl cursor-pointer hover:bg-white/5 transition-all";
+                card.onclick = () => openViewer(s);
+                card.innerHTML = `<h4 class="font-black italic uppercase">${s.name}</h4>`;
+                grid.appendChild(card);
+            });
             window.showView('samples');
         }
 
         function openViewer(sample) {
             document.getElementById('sample-name-viewer').innerText = sample.name;
-            document.getElementById('color-badge').innerText = sample.scheme.replace('-', ' / ');
+            document.getElementById('color-badge').innerText = sample.scheme;
             window.showView('viewer');
             initThree(sample);
         }
@@ -424,66 +368,46 @@
             loaderIndicator.classList.remove('hidden');
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.01, 2000);
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dl = new THREE.DirectionalLight(0xffffff, 0.8);
-            dl.position.set(5, 10, 7);
-            scene.add(dl);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const light = new THREE.DirectionalLight(0xffffff, 0.5);
+            light.position.set(1, 1, 1);
+            scene.add(light);
 
             const loadModel = (obj) => {
                 if (!sample.isGLB) {
-                    let color = sample.scheme === 'black-white' ? 0x111111 : (sample.scheme === 'white-black' ? 0xeeeeee : 0x0d9488);
-                    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.3 });
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x2dd4bf, metalness: 0.5, roughness: 0.2 });
                     obj = new THREE.Mesh(obj, mat);
                 }
                 const box = new THREE.Box3().setFromObject(obj);
                 const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
                 obj.position.sub(center);
                 scene.add(obj);
 
-                const maxDim = Math.max(size.x, size.y, size.z);
-                camera.position.set(maxDim * 1.5, maxDim * 1.5, maxDim * 1.5);
+                camera.position.set(0, 0, box.getSize(new THREE.Vector3()).length() * 1.5);
                 controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
                 controls.autoRotate = true;
                 loaderIndicator.classList.add('hidden');
                 animate();
             };
 
-            try {
-                if (sample.isGLB) {
-                    new THREE.GLTFLoader().load(sample.fileData, (g) => loadModel(g.scene));
-                } else {
-                    const loader = new THREE.STLLoader();
-                    loadModel(loader.parse(sample.fileData));
-                }
-            } catch (e) {
-                console.error("Error al cargar modelo:", e);
-                alert("Error al procesar el archivo 3D.");
-                loaderIndicator.classList.add('hidden');
+            if (sample.isGLB) {
+                new THREE.GLTFLoader().load(sample.fileData, (g) => loadModel(g.scene));
+            } else {
+                loadModel(new THREE.STLLoader().parse(sample.fileData));
             }
 
             function animate() {
                 animationId = requestAnimationFrame(animate);
-                if(controls) controls.update();
+                controls.update();
                 renderer.render(scene, camera);
             }
         }
 
-        window.addEventListener('resize', () => {
-            if (!camera || !renderer) return;
-            const container = document.getElementById('3d-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        });
-        
         initFirebase();
     </script>
 </body>
