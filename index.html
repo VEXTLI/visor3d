@@ -163,6 +163,7 @@
                         </div>
                         <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5">
                             <input type="file" id="admin-file" accept=".stl,.glb,.gltf" required class="text-xs text-slate-400 w-full file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2.5 file:rounded-lg file:mr-4 cursor-pointer">
+                            <p class="text-[9px] text-slate-500 mt-2 uppercase font-bold tracking-tighter">Límite Firestore: <span class="text-amber-500">~800KB</span> por modelo.</p>
                         </div>
                         <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-colors mt-4">Publicar Prototipo</button>
                     </form>
@@ -176,7 +177,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURACIÓN DE TU PROYECTO FIREBASE INTEGRADA
         const firebaseConfig = {
             apiKey: "AIzaSyA32fzj94oSeGgCa_7h7iEgoEpoJQggqpU",
             authDomain: "base-vextli.firebaseapp.com",
@@ -187,10 +187,9 @@
             measurementId: "G-NHNN2Q64CT"
         };
 
-        // Estado Global
         let db, auth, user;
         let brandsData = [];
-        const ADMIN_PWD = "vextli"; // Cambia esto si deseas más seguridad
+        const ADMIN_PWD = "vextli"; 
         const appId = 'vextli-portal-v1';
         let scene, camera, renderer, controls, animationId;
 
@@ -200,7 +199,6 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Autenticación Anónima (Asegúrate de habilitarla en la consola de Firebase)
                 await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (u) => {
@@ -210,17 +208,18 @@
                         statusEl.innerText = `Online: ${user.uid.substring(0,6)}`;
                         statusEl.classList.replace('text-slate-500', 'text-accent');
                         setupRealtimeSync();
+                    } else {
+                        statusEl.innerText = "Error: Sin Sesión";
                     }
                 });
             } catch (error) {
                 console.error("Firebase init error:", error);
-                document.getElementById('loading-home').innerHTML = '<p class="text-red-400 text-xs">Error: Asegúrate de habilitar "Anonymous Sign-in" en Firebase.</p>';
+                document.getElementById('loading-home').innerHTML = `<p class="text-red-400 text-xs">Error de conexión.</p>`;
             }
         };
 
         const setupRealtimeSync = () => {
             if (!user) return;
-            // Ruta obligatoria para persistencia en ambiente colaborativo
             const brandsRef = collection(db, 'artifacts', appId, 'public', 'data', 'brands');
             
             onSnapshot(brandsRef, (snapshot) => {
@@ -228,11 +227,10 @@
                 refreshUI();
                 document.getElementById('loading-home').classList.add('hidden');
             }, (error) => {
-                console.error("Sync error:", error);
+                console.error("Firestore sync error:", error);
             });
         };
 
-        // Control de Vistas
         window.showView = (view) => {
             ['home', 'samples', 'viewer', 'admin'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
@@ -248,7 +246,6 @@
             if (prompt("Contraseña Administrador:") === ADMIN_PWD) window.showView('admin');
         };
 
-        // Acciones Admin
         window.addBrand = async () => {
             if (!user) return;
             const input = document.getElementById('admin-brand-input');
@@ -257,13 +254,14 @@
             
             const brandId = 'brand_' + Date.now().toString();
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId), {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
+                await setDoc(docRef, {
                     name: name,
                     samples: [],
                     createdAt: new Date().toISOString()
                 });
                 input.value = '';
-            } catch (err) { alert("Error al guardar en base de datos."); }
+            } catch (err) { alert("Error al guardar empresa."); }
         };
 
         window.deleteBrand = async (id) => {
@@ -283,21 +281,30 @@
             
             if (!brandId || !fileInput.files[0]) return;
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Subiendo...';
-
             const file = fileInput.files[0];
+            
+            // Verificación de tamaño (Límite 1MB de Firestore, dejando margen para el resto de datos)
+            if (file.size > 800000) {
+                alert("ERROR: El archivo seleccionado es demasiado grande para Firestore (~800KB máx). Por favor, usa archivos simplificados o comprimidos.");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Procesando...';
+
             const reader = new FileReader();
 
             reader.onload = async (ev) => {
                 try {
                     const sampleId = 'sample_' + Date.now().toString();
+                    const isGLB = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
+                    
                     const sampleObj = {
                         id: sampleId,
                         name: document.getElementById('admin-sample-name').value,
                         scheme: document.getElementById('admin-sample-scheme').value,
                         fileData: ev.target.result, 
-                        isGLB: file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')
+                        isGLB: isGLB
                     };
 
                     const brandRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
@@ -306,17 +313,22 @@
                     });
 
                     e.target.reset();
-                    alert("¡Modelo publicado en la nube!");
+                    alert("¡Modelo publicado!");
                 } catch (err) {
-                    alert("Error: El archivo es demasiado pesado para el plan gratuito de base de datos.");
+                    console.error("Error de subida:", err);
+                    alert("Error al guardar en la nube. Revisa el tamaño del archivo.");
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerText = 'Publicar Prototipo';
                 }
             };
 
-            if (file.name.toLowerCase().endsWith('.stl')) reader.readAsArrayBuffer(file);
-            else reader.readAsDataURL(file);
+            // Los STL se procesan mejor como ArrayBuffer para el visor, los GLB como DataURL (Base64)
+            if (file.name.toLowerCase().endsWith('.stl')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsDataURL(file);
+            }
         };
 
         function refreshUI() {
@@ -398,7 +410,6 @@
             initThree(sample);
         }
 
-        // Three.js Visor
         function initThree(sample) {
             const container = document.getElementById('3d-container');
             const loaderIndicator = document.getElementById('loading-indicator');
@@ -438,8 +449,19 @@
                 animate();
             };
 
-            if (sample.isGLB) new THREE.GLTFLoader().load(sample.fileData, (g) => loadModel(g.scene));
-            else loadModel(new THREE.STLLoader().parse(sample.fileData));
+            try {
+                if (sample.isGLB) {
+                    new THREE.GLTFLoader().load(sample.fileData, (g) => loadModel(g.scene));
+                } else {
+                    // Para STL, si es ArrayBuffer almacenado como objeto o string, lo parseamos
+                    const loader = new THREE.STLLoader();
+                    loadModel(loader.parse(sample.fileData));
+                }
+            } catch (e) {
+                console.error("Error al cargar modelo:", e);
+                alert("Error al procesar el archivo 3D.");
+                loaderIndicator.classList.add('hidden');
+            }
 
             function animate() {
                 animationId = requestAnimationFrame(animate);
