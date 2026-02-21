@@ -163,7 +163,7 @@
                         </div>
                         <div class="bg-slate-900/40 p-5 rounded-2xl border border-white/5">
                             <input type="file" id="admin-file" accept=".stl,.glb,.gltf" required class="text-xs text-slate-400 w-full file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2.5 file:rounded-lg file:mr-4 cursor-pointer">
-                            <p class="text-[9px] text-slate-500 mt-2 uppercase font-bold tracking-tighter">Límite Firestore: <span class="text-amber-500">~800KB</span> por modelo.</p>
+                            <p class="text-[9px] text-slate-500 mt-2 uppercase font-bold tracking-tighter italic">Nota: Para archivos grandes, se recomienda usar formatos comprimidos.</p>
                         </div>
                         <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-colors mt-4">Publicar Prototipo</button>
                     </form>
@@ -283,14 +283,11 @@
 
             const file = fileInput.files[0];
             
-            // Verificación de tamaño (Límite 1MB de Firestore, dejando margen para el resto de datos)
-            if (file.size > 800000) {
-                alert("ERROR: El archivo seleccionado es demasiado grande para Firestore (~800KB máx). Por favor, usa archivos simplificados o comprimidos.");
-                return;
-            }
+            // Eliminada la validación preventiva de 800KB para intentar cargas mayores
+            // Aunque Firestore tiene un límite de 1MB por documento total.
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Procesando...';
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Intentando subir...';
 
             const reader = new FileReader();
 
@@ -308,22 +305,32 @@
                     };
 
                     const brandRef = doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId);
+                    
+                    // Verificación de tamaño aproximado del objeto JSON antes de enviar
+                    const sizeInBytes = new TextEncoder().encode(JSON.stringify(sampleObj)).length;
+                    if (sizeInBytes > 1000000) {
+                        throw new Error("EXCEEDS_FIRESTORE_LIMIT");
+                    }
+
                     await updateDoc(brandRef, {
                         samples: arrayUnion(sampleObj)
                     });
 
                     e.target.reset();
-                    alert("¡Modelo publicado!");
+                    alert("¡Modelo publicado con éxito!");
                 } catch (err) {
                     console.error("Error de subida:", err);
-                    alert("Error al guardar en la nube. Revisa el tamaño del archivo.");
+                    if (err.message === "EXCEEDS_FIRESTORE_LIMIT") {
+                        alert("El archivo es demasiado pesado para la base de datos (límite 1MB). Intenta simplificar el modelo 3D.");
+                    } else {
+                        alert("Error al guardar en la nube. Puede que el archivo sea demasiado grande.");
+                    }
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerText = 'Publicar Prototipo';
                 }
             };
 
-            // Los STL se procesan mejor como ArrayBuffer para el visor, los GLB como DataURL (Base64)
             if (file.name.toLowerCase().endsWith('.stl')) {
                 reader.readAsArrayBuffer(file);
             } else {
@@ -453,7 +460,6 @@
                 if (sample.isGLB) {
                     new THREE.GLTFLoader().load(sample.fileData, (g) => loadModel(g.scene));
                 } else {
-                    // Para STL, si es ArrayBuffer almacenado como objeto o string, lo parseamos
                     const loader = new THREE.STLLoader();
                     loadModel(loader.parse(sample.fileData));
                 }
