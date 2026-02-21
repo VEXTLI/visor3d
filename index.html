@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
 
+    <!-- Three.js y Loaders -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
@@ -170,10 +171,11 @@
                 brandsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 refreshUI();
                 document.getElementById('loading-home').classList.add('hidden');
+            }, (error) => {
+                console.error("Error sincronizando:", error);
             });
         };
 
-        // Guardar archivo como Base64 para evitar problemas de tipos en Firestore
         document.getElementById('admin-sample-form').onsubmit = async (e) => {
             e.preventDefault();
             const brandId = document.getElementById('admin-select-brand').value;
@@ -191,18 +193,19 @@
                         id: 's_' + Date.now(),
                         name: document.getElementById('admin-sample-name').value,
                         scheme: document.getElementById('admin-sample-scheme').value,
-                        fileData: ev.target.result, // Esto será un DataURL (Base64)
+                        fileData: ev.target.result, 
                         isGLB: isGLB
                     };
 
+                    // Firestore limit check (Document max 1MB)
                     if (JSON.stringify(sampleObj).length > 1048487) {
-                        throw new Error("El archivo convertido a texto supera 1MB.");
+                        throw new Error("El archivo es demasiado grande (Límite 1MB Firestore). Intenta simplificar la malla en Blender.");
                     }
 
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', brandId), {
                         samples: arrayUnion(sampleObj)
                     });
-                    alert("Subido!");
+                    alert("¡Prototipo subido correctamente!");
                     e.target.reset();
                 } catch (err) { alert(err.message); }
                 finally { submitBtn.disabled = false; submitBtn.innerText = 'Subir'; }
@@ -213,7 +216,9 @@
         window.showView = (view) => {
             ['home', 'samples', 'viewer', 'admin'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
             document.getElementById(`view-${view}`).classList.remove('hidden');
-            if (view !== 'viewer' && animationId) cancelAnimationFrame(animationId);
+            if (view !== 'viewer' && animationId) {
+                cancelAnimationFrame(animationId);
+            }
         };
 
         window.requestAdminAccess = () => { if (prompt("Pass:") === "vextli") window.showView('admin'); };
@@ -221,33 +226,41 @@
         window.addBrand = async () => {
             const name = document.getElementById('admin-brand-input').value;
             if (name) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', 'b_'+Date.now()), { name, samples: [] });
+            document.getElementById('admin-brand-input').value = '';
         };
 
-        window.deleteBrand = async (id) => { if(confirm("Borrar?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id)); };
+        window.deleteBrand = async (id) => { if(confirm("¿Seguro que deseas borrar esta empresa?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id)); };
 
         function refreshUI() {
             const grid = document.getElementById('brands-grid');
             grid.innerHTML = '';
             brandsData.forEach(b => {
                 const div = document.createElement('div');
-                div.className = "glass-card p-8 rounded-3xl cursor-pointer text-center";
+                div.className = "glass-card p-8 rounded-3xl cursor-pointer text-center hover:bg-white/5";
                 div.onclick = () => openBrand(b);
                 div.innerHTML = `<h3 class="font-black italic">${b.name}</h3>`;
                 grid.appendChild(div);
             });
             const select = document.getElementById('admin-select-brand');
             select.innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            document.getElementById('admin-brands-list').innerHTML = brandsData.map(b => `<div class="flex justify-between p-2 bg-white/5 rounded"><span>${b.name}</span><button onclick="deleteBrand('${b.id}')">X</button></div>`).join('');
+            document.getElementById('admin-brands-list').innerHTML = brandsData.map(b => `<div class="flex justify-between items-center p-3 mb-2 bg-white/5 rounded-xl text-sm border border-white/5"><span>${b.name}</span><button onclick="deleteBrand('${b.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></div>`).join('');
         }
 
         function openBrand(brand) {
             document.getElementById('brand-title').innerText = brand.name;
             const grid = document.getElementById('samples-grid');
             grid.innerHTML = brand.samples.map(s => `
-                <div class="glass-card p-6 rounded-3xl cursor-pointer" onclick='window.openViewer(${JSON.stringify(s)})'>
+                <div class="glass-card p-6 rounded-3xl cursor-pointer hover:border-accent/50" onclick='window.openViewer(${JSON.stringify(s)})'>
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fas ${s.isGLB ? 'fa-cubes' : 'fa-cube'} text-2xl text-accent/80"></i>
+                        <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400 border border-white/10 px-2 py-1 rounded-full">${s.isGLB ? 'GLB' : 'STL'}</span>
+                    </div>
                     <h4 class="font-black italic uppercase">${s.name}</h4>
                 </div>
             `).join('');
+            if(brand.samples.length === 0) {
+                grid.innerHTML = `<p class="text-slate-500 italic text-sm col-span-full">No hay prototipos cargados todavía.</p>`;
+            }
             window.showView('samples');
         }
 
@@ -255,7 +268,8 @@
             document.getElementById('sample-name-viewer').innerText = sample.name;
             document.getElementById('color-badge').innerText = sample.scheme;
             window.showView('viewer');
-            initThree(sample);
+            // Damos un pequeño respiro para que el DOM se actualice y el canvas obtenga su ancho correcto
+            setTimeout(() => initThree(sample), 50);
         };
 
         function initThree(sample) {
@@ -264,16 +278,26 @@
             document.getElementById('loading-indicator').classList.remove('hidden');
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 5000);
+            
+            // FIX 1: Cambiamos el plano "near" de 0.1 a 0.001 para evitar recortes en objetos muy pequeños
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.001, 10000);
+            
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Mejor resolución
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambient);
-            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-            directional.position.set(10, 10, 10);
-            scene.add(directional);
+            // FIX 2: Mejor configuración de luces. HemisphereLight evita que las sombras queden 100% negras
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+            hemiLight.position.set(0, 200, 0);
+            scene.add(hemiLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            scene.add(directionalLight);
 
             const processGeometry = (geometryOrGroup) => {
                 let mesh;
@@ -283,27 +307,43 @@
                     let color = 0x2dd4bf;
                     if (sample.scheme === 'black-white') color = 0x111111;
                     if (sample.scheme === 'white-black') color = 0xeeeeee;
-                    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.6 });
+                    
+                    // FIX 3: Usamos MeshPhongMaterial. Funciona mucho mejor que Standard cuando no hay "Environment Maps"
+                    const mat = new THREE.MeshPhongMaterial({ 
+                        color: color, 
+                        shininess: 80,
+                        specular: 0x222222
+                    });
+
+                    // Calculamos normales por si el STL vino sin ellas (evita que se vea totalmente negro)
+                    if (!geometryOrGroup.attributes.normal) {
+                        geometryOrGroup.computeVertexNormals();
+                    }
                     mesh = new THREE.Mesh(geometryOrGroup, mat);
                 }
 
-                // Ajustar al centro
+                // Ajustar al centro exacto
                 const box = new THREE.Box3().setFromObject(mesh);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
+                
                 mesh.position.sub(center);
                 scene.add(mesh);
 
-                // Auto-zoom cámara
-                const maxDim = Math.max(size.x, size.y, size.z);
+                // Auto-zoom cámara adaptativo (FIX 4: Fallback si maxDim es 0)
+                const maxDim = Math.max(size.x, size.y, size.z) || 1; 
                 const fov = camera.fov * (Math.PI / 180);
                 let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-                cameraZ *= 2.5; // Margen
+                cameraZ *= 2.5; 
+                
                 camera.position.set(cameraZ, cameraZ, cameraZ);
                 camera.lookAt(0, 0, 0);
 
                 controls = new THREE.OrbitControls(camera, renderer.domElement);
                 controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.target.set(0, 0, 0); // Aseguramos que rote sobre el centro
+
                 document.getElementById('loading-indicator').classList.add('hidden');
                 
                 const animate = () => {
@@ -314,19 +354,29 @@
                 animate();
             };
 
-            // Loader detectando si es Base64
+            const onError = (err) => {
+                console.error("Error al cargar el 3D:", err);
+                document.getElementById('loading-indicator').classList.add('hidden');
+                alert("Hubo un problema procesando el archivo 3D. Verifica que no esté corrupto.");
+            };
+
+            // FIX 5: Usamos loaders nativos de forma segura para las DataURL en lugar de Fetch manual
             if (sample.isGLB) {
-                new THREE.GLTFLoader().load(sample.fileData, (gltf) => processGeometry(gltf.scene));
+                new THREE.GLTFLoader().load(sample.fileData, (gltf) => processGeometry(gltf.scene), undefined, onError);
             } else {
-                // Para STL, necesitamos convertir el DataURL de vuelta a ArrayBuffer
-                fetch(sample.fileData)
-                    .then(res => res.arrayBuffer())
-                    .then(buffer => {
-                        const geometry = new THREE.STLLoader().parse(buffer);
-                        processGeometry(geometry);
-                    });
+                new THREE.STLLoader().load(sample.fileData, (geometry) => processGeometry(geometry), undefined, onError);
             }
         }
+
+        // FIX 6: Listener global para redimensionar el canvas si se cambia el tamaño de la ventana
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('3d-container');
+            if (camera && renderer && container && container.clientWidth > 0) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
 
         initFirebase();
     </script>
