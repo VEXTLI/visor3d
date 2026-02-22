@@ -272,42 +272,74 @@
             } catch(e) { showToast("Error al crear empresa", "error"); }
         };
 
-        // ELIMINAR EMPRESA (CORREGIDO)
+        // ELIMINAR EMPRESA RESILIENTE (Ignora archivos inexistentes)
         window.deleteBrand = async (brandId) => {
             if(!confirm("¿Eliminar esta empresa y todos sus prototipos asociados?")) return;
             try {
-                // Buscamos la empresa en los datos locales para saber qué prototipos tiene
                 const brand = brandsData.find(b => b.id === brandId);
                 
-                // 1. Borramos los archivos 3D pesados de cada prototipo primero
-                if(brand && brand.samples) {
-                    for(const s of brand.samples) {
-                        await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', s.id));
-                    }
+                // 1. Intentamos borrar archivos 3D de forma segura
+                if(brand && brand.samples && brand.samples.length > 0) {
+                    const deletePromises = brand.samples.map(async (s) => {
+                        try {
+                            // Intentamos borrar el archivo, si falla (no existe), no pasa nada
+                            await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', s.id));
+                        } catch (err) {
+                            console.warn(`Archivo ${s.id} no encontrado o ya borrado.`);
+                        }
+                    });
+                    await Promise.all(deletePromises);
                 }
 
                 // 2. Borramos el documento de la empresa
                 await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId));
                 showToast("Empresa eliminada por completo");
             } catch(e) {
-                console.error(e);
-                showToast("Error al eliminar de Firebase", "error");
+                console.error("Error crítico al eliminar empresa:", e);
+                // Si falla el borrado completo por un error de referencia, intentamos borrar solo el doc de la marca como último recurso
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId));
+                    showToast("Empresa eliminada (limpieza manual necesaria)");
+                } catch(lastErr) {
+                    showToast("Error persistente en Firebase", "error");
+                }
             }
         };
 
+        // ELIMINAR PROTOTIPO RESILIENTE
         window.deleteSample = async (brandId, sampleId) => {
             if(!confirm("¿Eliminar este prototipo?")) return;
             try {
                 const brand = brandsData.find(b => b.id === brandId);
+                if (!brand) return;
+                
                 const sample = brand.samples.find(s => s.id === sampleId);
-                if(sample) {
+                
+                // Borrado del archivo 3D (con catch silencioso por si no existe)
+                try {
                     await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId));
+                } catch(e) {
+                    console.warn("El archivo físico ya no existía.");
+                }
+
+                // Actualización del documento de la marca (quitar de la lista)
+                if (sample) {
                     await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
                         samples: arrayRemove(sample)
                     });
-                    showToast("Prototipo borrado");
+                } else {
+                    // Fallback: Si el objeto sample no está completo, filtramos manualmente
+                    const newSamples = brand.samples.filter(s => s.id !== sampleId);
+                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
+                        samples: newSamples
+                    });
                 }
-            } catch(e) { showToast("Error al borrar", "error"); }
+                
+                showToast("Prototipo borrado");
+            } catch(e) { 
+                console.error(e);
+                showToast("Error al borrar el prototipo", "error"); 
+            }
         };
 
         window.openBrand = (brand) => {
@@ -335,6 +367,9 @@
                     const mv = document.getElementById('mv-container');
                     mv.src = f.data().fileData;
                     mv.addEventListener('load', () => loader.classList.add('hidden'), {once: true});
+                } else {
+                    loader.classList.add('hidden');
+                    showToast("El archivo 3D no existe", "error");
                 }
             } catch(e) { loader.classList.add('hidden'); showToast("Error cargando 3D", "error"); }
         };
