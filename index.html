@@ -14,11 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
 
-    <!-- Three.js y Loaders -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- Google Model Viewer (Reemplaza a Three.js) -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; overflow-x: hidden; }
@@ -45,10 +42,8 @@
         .bg-accent { background-color: #2dd4bf; }
         
         .canvas-container { 
-            cursor: grab; 
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); 
         }
-        .canvas-container:active { cursor: grabbing; }
         
         /* Toolbar buttons */
         .tool-btn {
@@ -68,6 +63,14 @@
         ::-webkit-scrollbar-track { background: #020617; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(45,212,191,0.5); }
+
+        /* Ajustes para model-viewer */
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            --poster-color: transparent;
+            border-radius: 2.2rem;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
@@ -159,7 +162,7 @@
             <div id="samples-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
-        <!-- ================= VISOR 3D ================= -->
+        <!-- ================= VISOR 3D (MEJORADO CON MODEL-VIEWER) ================= -->
         <section id="view-viewer" class="hidden animate-fade-in flex flex-col items-center">
             <div class="w-full max-w-6xl">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
@@ -181,17 +184,27 @@
 
                 <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative shadow-2xl shadow-teal-900/10 border-white/10">
                     
-                    <!-- Loading Overlay inside Canvas -->
+                    <!-- Loading Overlay -->
                     <div id="loading-indicator" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm z-20 rounded-[2.2rem] hidden transition-opacity">
                         <i class="fas fa-cube text-accent text-5xl mb-6 animate-pulse"></i>
                         <div class="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
                             <div class="h-full bg-accent animate-[pulse_1.5s_ease-in-out_infinite] w-full origin-left"></div>
                         </div>
-                        <p class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Renderizando Malla...</p>
+                        <p class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando Modelo 3D...</p>
                     </div>
 
-                    <!-- 3D Viewport -->
-                    <div id="3d-container" class="canvas-container w-full h-[65vh] rounded-[2.2rem] relative"></div>
+                    <!-- 3D Viewport: MODEL-VIEWER -->
+                    <div class="canvas-container w-full h-[65vh] rounded-[2.2rem] relative">
+                        <model-viewer 
+                            id="mv-container"
+                            camera-controls 
+                            touch-action="pan-y" 
+                            shadow-intensity="1.5"
+                            exposure="1.2"
+                            environment-image="neutral"
+                            auto-rotate-delay="0">
+                        </model-viewer>
+                    </div>
 
                     <!-- Floating Toolbar -->
                     <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3 z-10 p-2 rounded-2xl glass-card bg-slate-950/50">
@@ -201,9 +214,6 @@
                         <div class="w-px h-6 bg-white/10"></div>
                         <button id="btn-rotate" onclick="window.toggleAutoRotate()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Auto Rotación">
                             <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button id="btn-wireframe" onclick="window.toggleWireframe()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Modo Alámbrico (Estructura)">
-                            <i class="fas fa-border-all"></i>
                         </button>
                     </div>
                 </div>
@@ -263,8 +273,8 @@
                                 <select id="admin-sample-scheme" class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors appearance-none">
                                     <option value="Negro Onyx">Negro Onyx (Brillante)</option>
                                     <option value="Blanco Mate">Blanco Mate</option>
-                                    <option value="Vextli Teal">Vextli Teal (Corporativo)</option>
-                                    <option value="Acero Crudo">Acero Crudo</option>
+                                    <option value="Vextli Teal">Vextli Teal (Color Base)</option>
+                                    <option value="Original">Color Original (Tinkercad)</option>
                                 </select>
                             </div>
                         </div>
@@ -281,7 +291,7 @@
 
                         <div class="border-2 border-dashed border-white/10 hover:border-accent/50 transition-colors rounded-xl p-6 text-center bg-slate-950/30">
                             <i class="fas fa-file-upload text-3xl text-slate-500 mb-3"></i>
-                            <p class="text-xs text-slate-400 mb-4 font-medium">Soporta archivos <span class="text-white font-bold">.STL</span> o <span class="text-white font-bold">.GLB</span> (Max 1MB recomendado)</p>
+                            <p class="text-xs text-slate-400 mb-4 font-medium">Soporta archivos <span class="text-white font-bold">.GLB</span> o <span class="text-white font-bold">.STL</span></p>
                             <input type="file" id="admin-file" accept=".stl,.glb" required class="text-sm text-slate-300 w-full max-w-xs mx-auto block file:bg-white/10 file:hover:bg-white/20 file:border-none file:text-white file:px-4 file:py-2 file:rounded-lg file:cursor-pointer file:transition-colors file:font-bold file:text-xs">
                         </div>
 
@@ -308,7 +318,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA32fzj94oSeGgCa_7h7iEgoEpoJQggqpU",
@@ -322,10 +332,6 @@
         let db, auth, user, brandsData = [];
         const appIdentifier = 'vextli-portal-v1';
         
-        // Three.js State
-        let scene, camera, renderer, controls, animationId;
-        let currentMeshGroup = null;
-        let isWireframe = false;
         let isAutoRotate = false;
 
         const initFirebase = async () => {
@@ -361,6 +367,7 @@
             document.getElementById('stat-samples').innerText = totalSamples;
         };
 
+        // NUEVA LOGICA DE GUARDADO: Evita el limite de 1MB por empresa
         document.getElementById('admin-sample-form').onsubmit = async (e) => {
             e.preventDefault();
             const brandId = document.getElementById('admin-select-brand').value;
@@ -373,23 +380,33 @@
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 try {
+                    const base64Data = ev.target.result;
+                    
+                    // Firebase limita cada documento a 1MB (1,048,576 bytes).
+                    if (base64Data.length > 1045000) {
+                        throw new Error("El archivo excede el límite máximo de 750KB reales. Simplifica la pieza en Tinkercad.");
+                    }
+
                     const isGLB = file.name.toLowerCase().endsWith('.glb');
-                    const sampleObj = {
-                        id: 's_' + Date.now(),
+                    const sampleId = 's_' + Date.now();
+
+                    // 1. Guardar el archivo pesado en su PROPIO documento (colección 'files')
+                    await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId), {
+                        fileData: base64Data
+                    });
+
+                    // 2. Guardar solo los metadatos (ligeros) en la empresa
+                    const sampleMeta = {
+                        id: sampleId,
                         name: document.getElementById('admin-sample-name').value,
                         desc: document.getElementById('admin-sample-desc').value || 'Sin descripción detallada.',
                         scheme: document.getElementById('admin-sample-scheme').value,
-                        fileData: ev.target.result, 
                         isGLB: isGLB,
                         date: new Date().toLocaleDateString('es-MX')
                     };
 
-                    if (JSON.stringify(sampleObj).length > 1048487) {
-                        throw new Error("El archivo excede el límite permitido (1MB). Optimiza la malla.");
-                    }
-
                     await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                        samples: arrayUnion(sampleObj)
+                        samples: arrayUnion(sampleMeta)
                     });
                     
                     alert("¡Prototipo subido correctamente a Vextli Cloud!");
@@ -409,18 +426,14 @@
             ['home', 'samples', 'viewer', 'admin'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
             document.getElementById(`view-${view}`).classList.remove('hidden');
             
-            // Si salimos del visor, apagar render y resetear estados de botones
             if (view !== 'viewer') {
-                if (animationId) cancelAnimationFrame(animationId);
-                isWireframe = false;
                 isAutoRotate = false;
-                document.getElementById('btn-wireframe').classList.remove('active');
                 document.getElementById('btn-rotate').classList.remove('active');
+                document.getElementById('mv-container').removeAttribute('auto-rotate');
             }
         };
 
         window.requestAdminAccess = () => { 
-            // Simple visual prompt for now. Can be replaced with real auth later.
             const pass = prompt("🔑 Código de acceso Vextli:");
             if (pass === "vextli") window.showView('admin'); 
         };
@@ -445,7 +458,6 @@
         };
 
         function refreshUI() {
-            // Render Home Grid
             const grid = document.getElementById('brands-grid');
             grid.innerHTML = '';
             brandsData.forEach(b => {
@@ -468,7 +480,6 @@
                 grid.appendChild(div);
             });
 
-            // Update Admin Select & List
             const select = document.getElementById('admin-select-brand');
             select.innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
             
@@ -508,172 +519,65 @@
                         <p class="text-xs text-slate-400 line-clamp-2 mt-auto">${s.desc || 'Sin descripción'}</p>
                         
                         <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
-                            <span class="text-slate-500"><i class="fas fa-palette mr-1"></i> ${s.scheme.split(' ')[0]}</span>
-                            <span class="text-accent flex items-center gap-1 group-hover:gap-2 transition-all">Ver 3D <i class="fas fa-chevron-right"></i></span>
+                            <span class="text-slate-500"><i class="fas fa-palette mr-1"></i> ${s.scheme ? s.scheme.split(' ')[0] : 'Normal'}</span>
+                            <span class="text-accent flex items-center gap-1 group-hover:gap-2 transition-all">Ver 3D <i class="fas fa-arrow-right"></i></span>
                         </div>
                     </div>
                 `).join('');
             }
-            window.showView('samples');
+            showView('samples');
         }
 
-        // ================= THREE.JS VIEWER LOGIC =================
+        // CARGA EL MODELO DESDE LA NUEVA COLECCIÓN "FILES"
+        window.openViewer = async (sampleMeta) => {
+            showView('viewer');
+            document.getElementById('sample-name-viewer').innerText = sampleMeta.name;
+            document.getElementById('sample-desc-viewer').innerText = sampleMeta.desc;
+            document.getElementById('color-badge').innerText = sampleMeta.scheme || 'Original';
 
-        window.openViewer = (sample) => {
-            document.getElementById('sample-name-viewer').innerText = sample.name;
-            document.getElementById('sample-desc-viewer').innerText = sample.desc || 'Sin descripción detallada.';
-            document.getElementById('color-badge').innerText = sample.scheme;
-            window.showView('viewer');
+            const mv = document.getElementById('mv-container');
+            const loading = document.getElementById('loading-indicator');
             
-            // Respiro para DOM
-            setTimeout(() => initThree(sample), 100);
-        };
+            mv.removeAttribute('src'); // Limpiar modelo anterior
+            loading.classList.remove('hidden');
 
-        // UI Toolbar Functions
-        window.toggleWireframe = () => {
-            if(!currentMeshGroup) return;
-            isWireframe = !isWireframe;
-            currentMeshGroup.traverse((child) => {
-                if (child.isMesh && child.material) {
-                    child.material.wireframe = isWireframe;
+            try {
+                // Buscamos si el archivo se guardó con la "Nueva Arquitectura"
+                const fileDoc = await getDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleMeta.id));
+                
+                if (fileDoc.exists()) {
+                    mv.src = fileDoc.data().fileData;
+                } else if (sampleMeta.fileData) {
+                    // Fallback: Por si intentas abrir un archivo viejo que sí se alcanzó a guardar antes
+                    mv.src = sampleMeta.fileData;
+                } else {
+                    alert("No se encontró el archivo 3D en la base de datos.");
                 }
-            });
-            document.getElementById('btn-wireframe').classList.toggle('active', isWireframe);
+            } catch (error) {
+                console.error(error);
+                alert("Error cargando el modelo: " + error.message);
+            } finally {
+                loading.classList.add('hidden');
+            }
         };
 
+        // Controles de Model-Viewer
         window.toggleAutoRotate = () => {
-            if(!controls) return;
+            const mv = document.getElementById('mv-container');
             isAutoRotate = !isAutoRotate;
-            controls.autoRotate = isAutoRotate;
-            controls.autoRotateSpeed = 2.0;
-            document.getElementById('btn-rotate').classList.toggle('active', isAutoRotate);
+            if (isAutoRotate) {
+                mv.setAttribute('auto-rotate', 'true');
+                document.getElementById('btn-rotate').classList.add('active');
+            } else {
+                mv.removeAttribute('auto-rotate');
+                document.getElementById('btn-rotate').classList.remove('active');
+            }
         };
 
         window.resetCamera = () => {
-            if(!camera || !controls || !currentMeshGroup) return;
-            
-            const box = new THREE.Box3().setFromObject(currentMeshGroup);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z) || 1; 
-            const fov = camera.fov * (Math.PI / 180);
-            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.2; 
-            
-            camera.position.set(cameraZ, cameraZ * 0.5, cameraZ);
-            controls.target.set(0, 0, 0);
-            controls.update();
+            const mv = document.getElementById('mv-container');
+            mv.cameraOrbit = "0deg 75deg 105%"; // Resetear vista
         };
-
-        function initThree(sample) {
-            const container = document.getElementById('3d-container');
-            container.innerHTML = '';
-            document.getElementById('loading-indicator').classList.remove('hidden');
-
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.001, 10000);
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
-            
-            // Soft shadows configuration
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
-            container.appendChild(renderer.domElement);
-
-            // Advanced Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-            scene.add(ambientLight);
-            
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x0f172a, 0.6); // Sky to dark slate
-            hemiLight.position.set(0, 100, 0);
-            scene.add(hemiLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(10, 20, 10);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            scene.add(dirLight);
-
-            const processGeometry = (geometryOrGroup) => {
-                let mesh;
-                
-                // Colors dictionary
-                const colors = {
-                    'Negro Onyx': { color: 0x1a1a1a, shininess: 100, specular: 0x444444 },
-                    'Blanco Mate': { color: 0xf8fafc, shininess: 10, specular: 0x111111 },
-                    'Vextli Teal': { color: 0x2dd4bf, shininess: 60, specular: 0x222222 },
-                    'Acero Crudo': { color: 0x94a3b8, shininess: 90, specular: 0x666666 }
-                };
-
-                if (sample.isGLB) {
-                    mesh = geometryOrGroup;
-                    // Ensure GLB objects cast shadows
-                    mesh.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                } else {
-                    const style = colors[sample.scheme] || colors['Vextli Teal'];
-                    const mat = new THREE.MeshPhongMaterial(style);
-
-                    if (!geometryOrGroup.attributes.normal) {
-                        geometryOrGroup.computeVertexNormals();
-                    }
-                    mesh = new THREE.Mesh(geometryOrGroup, mat);
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                }
-
-                currentMeshGroup = mesh; // Store for toolbar actions
-
-                // Center object precisely
-                const box = new THREE.Box3().setFromObject(mesh);
-                const center = box.getCenter(new THREE.Vector3());
-                mesh.position.sub(center);
-                scene.add(mesh);
-
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.maxDistance = 5000;
-
-                window.resetCamera(); // Set initial camera position
-
-                document.getElementById('loading-indicator').classList.add('hidden');
-                
-                const animate = () => {
-                    animationId = requestAnimationFrame(animate);
-                    controls.update();
-                    renderer.render(scene, camera);
-                };
-                animate();
-            };
-
-            const onError = (err) => {
-                console.error("Error al cargar 3D:", err);
-                document.getElementById('loading-indicator').classList.add('hidden');
-                alert("El archivo 3D no se pudo procesar. Por favor revisa el formato.");
-            };
-
-            if (sample.isGLB) {
-                new THREE.GLTFLoader().load(sample.fileData, (gltf) => processGeometry(gltf.scene), undefined, onError);
-            } else {
-                new THREE.STLLoader().load(sample.fileData, (geometry) => processGeometry(geometry), undefined, onError);
-            }
-        }
-
-        window.addEventListener('resize', () => {
-            const container = document.getElementById('3d-container');
-            if (camera && renderer && container && container.clientWidth > 0) {
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            }
-        });
 
         initFirebase();
     </script>
