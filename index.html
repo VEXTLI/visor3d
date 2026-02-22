@@ -51,11 +51,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(45,212,191,0.5); }
-
         model-viewer {
             width: 100%;
             height: 100%;
@@ -64,7 +59,7 @@
             outline: none;
         }
 
-        /* Notificaciones Toast */
+        /* Notifications */
         #toast-container {
             position: fixed;
             bottom: 2rem;
@@ -93,21 +88,18 @@
         .toast.show { transform: translateX(0); }
         .toast.error { border-left-color: #ef4444; }
         .toast.error i { color: #ef4444; }
-        .toast i { color: #2dd4bf; font-size: 1.25rem; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
 
     <div class="glow-bg-1"></div>
     <div class="glow-bg-2"></div>
-
-    <!-- Contenedor de Notificaciones -->
     <div id="toast-container"></div>
 
     <nav class="fixed w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="https://vextli.github.io/VEXTLI/" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 bg-teal-400/10 rounded-xl flex items-center justify-center border border-teal-400/20 group-hover:border-teal-400/50 group-hover:bg-teal-400/20 transition-all shadow-[0_0_15px_rgba(45,212,191,0.1)]">
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 bg-teal-400/10 rounded-xl flex items-center justify-center border border-teal-400/20 group-hover:border-teal-400/50 group-hover:bg-teal-400/20 transition-all">
                     <i class="fas fa-cube text-accent text-lg"></i>
                 </div>
                 <div class="flex flex-col">
@@ -121,7 +113,7 @@
                     <div id="auth-status" class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Iniciando...</div>
                 </div>
                 <div class="h-6 w-px bg-white/10"></div>
-                <button onclick="requestAdminAccess()" class="opacity-40 hover:opacity-100 transition-opacity p-2 text-slate-300 hover:text-accent" title="Panel de Administración">
+                <button onclick="requestAdminAccess()" class="opacity-40 hover:opacity-100 transition-opacity p-2 text-slate-300 hover:text-accent">
                     <i class="fas fa-sliders-h text-lg"></i>
                 </button>
             </div>
@@ -137,178 +129,89 @@
                     <h1 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
                         Nuestros <br><span class="text-accent">Clientes</span>
                     </h1>
-                    <p class="text-slate-400 font-medium max-w-lg leading-relaxed">
-                        Selecciona el perfil corporativo para visualizar y evaluar los prototipos 3D asignados a tu proyecto.
-                    </p>
                 </div>
                 <div class="flex gap-4">
                     <div class="glass-card px-6 py-4 rounded-2xl border-none bg-slate-900/50 text-center min-w-[100px]">
                         <div class="text-3xl font-black text-white" id="stat-brands">0</div>
                         <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-1">Empresas</div>
                     </div>
-                    <div class="glass-card px-6 py-4 rounded-2xl border-none bg-slate-900/50 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-accent" id="stat-samples">0</div>
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-1">Prototipos</div>
-                    </div>
                 </div>
             </header>
-            
-            <div class="h-px w-full bg-gradient-to-r from-white/10 to-transparent mb-12"></div>
-
             <div id="loading-home" class="text-center py-32">
                 <i class="fas fa-circle-notch fa-spin text-accent text-4xl mb-4"></i>
-                <p class="text-sm text-slate-500 uppercase tracking-widest font-bold">Cargando Datos...</p>
             </div>
-            
             <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
         </section>
 
         <!-- SAMPLES VIEW -->
         <section id="view-samples" class="hidden animate-fade-in">
-            <button onclick="showView('home')" class="mb-8 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors w-fit group">
-                <i class="fas fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Volver al Inicio
+            <button onclick="showView('home')" class="mb-8 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors">
+                <i class="fas fa-arrow-left"></i> Volver al Inicio
             </button>
-            
-            <div class="glass-card p-8 rounded-[2rem] mb-10 bg-gradient-to-br from-white/[0.03] to-transparent border-t-white/10">
-                <div class="flex items-center gap-4 mb-2">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                        <i class="far fa-building text-xl text-slate-400"></i>
-                    </div>
-                    <h2 id="brand-title" class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Empresa</h2>
-                </div>
-                <p class="text-slate-500 ml-16">Espacio de trabajo y revisión de piezas NFC.</p>
+            <div class="glass-card p-8 rounded-[2rem] mb-10">
+                <h2 id="brand-title" class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Empresa</h2>
             </div>
-
             <div id="samples-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
         <!-- VIEWER VIEW -->
-        <section id="view-viewer" class="hidden animate-fade-in flex flex-col items-center">
-            <div class="w-full max-w-6xl">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-                    <div>
-                        <button onclick="showView('samples')" class="mb-4 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors w-fit group">
-                            <i class="fas fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Volver a Prototipos
-                        </button>
-                        <h3 id="sample-name-viewer" class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Nombre de Pieza</h3>
-                        <p id="sample-desc-viewer" class="text-slate-400 text-sm mt-2 max-w-xl">Sin descripción detallada.</p>
+        <section id="view-viewer" class="hidden animate-fade-in">
+            <div class="max-w-6xl mx-auto">
+                <button onclick="showView('samples')" class="mb-6 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Volver a Prototipos
+                </button>
+                <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative shadow-2xl">
+                    <div id="loading-indicator" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 z-20 rounded-[2.2rem] hidden">
+                        <i class="fas fa-cube text-accent text-4xl animate-bounce mb-4"></i>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando 3D...</p>
                     </div>
-                    <div id="color-badge-container" class="flex flex-col items-end">
-                        <span class="text-[9px] uppercase text-slate-500 font-bold mb-1 tracking-widest">Esquema / Material</span>
-                        <div id="color-badge" class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 border border-white/10 text-white shadow-inner"></div>
+                    <div class="canvas-container w-full h-[65vh] rounded-[2.2rem]">
+                        <model-viewer id="mv-container" camera-controls touch-action="none" shadow-intensity="1.5" exposure="1.2" environment-image="neutral"></model-viewer>
                     </div>
                 </div>
-
-                <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative shadow-2xl shadow-teal-900/10 border-white/10">
-                    <div id="loading-indicator" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm z-20 rounded-[2.2rem] hidden">
-                        <i class="fas fa-cube text-accent text-5xl mb-6 animate-bounce"></i>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando Modelo 3D...</p>
-                    </div>
-
-                    <div class="canvas-container w-full h-[65vh] rounded-[2.2rem] relative">
-                        <model-viewer 
-                            id="mv-container"
-                            camera-controls 
-                            touch-action="none" 
-                            shadow-intensity="1.5"
-                            exposure="1.2"
-                            environment-image="neutral"
-                            auto-rotate-delay="0">
-                        </model-viewer>
-                    </div>
-
-                    <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3 z-10 p-2 rounded-2xl glass-card bg-slate-950/50">
-                        <button onclick="resetCamera()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Centrar Cámara">
-                            <i class="fas fa-crosshairs"></i>
-                        </button>
-                        <div class="w-px h-6 bg-white/10"></div>
-                        <button id="btn-rotate" onclick="toggleAutoRotate()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Auto Rotación">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
+                <div class="mt-6 text-center">
+                    <h3 id="sample-name-viewer" class="text-2xl font-black uppercase italic">Nombre</h3>
+                    <p id="sample-desc-viewer" class="text-slate-400 mt-2"></p>
                 </div>
             </div>
         </section>
 
         <!-- ADMIN PANEL -->
         <section id="view-admin" class="hidden animate-fade-in">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                    <h2 class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Panel de <span class="text-accent">Control</span></h2>
-                    <p class="text-slate-400 text-sm mt-1">Gestión de empresas y prototipos de llaveros NFC.</p>
-                </div>
-                <button onclick="showView('home')" class="glass-card hover:bg-white/10 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2">
-                    <i class="fas fa-times"></i> Cerrar Panel
-                </button>
+            <div class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Panel <span class="text-accent">VEXTLI</span></h2>
+                <button onclick="showView('home')" class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cerrar</button>
             </div>
 
             <div class="grid lg:grid-cols-12 gap-8">
-                <!-- Columna Izquierda: Carpetas -->
-                <div class="lg:col-span-5 glass-card p-8 rounded-[2rem] h-fit flex flex-col max-h-[70vh]">
-                    <div class="flex items-center gap-3 mb-6 shrink-0">
-                        <i class="fas fa-folder-open text-accent"></i>
-                        <h3 class="text-sm font-black uppercase tracking-widest">Empresas / Carpetas</h3>
+                <div class="lg:col-span-5 glass-card p-8 rounded-[2rem]">
+                    <h3 class="text-sm font-black uppercase tracking-widest mb-6"><i class="fas fa-folder mr-2 text-accent"></i> Empresas</h3>
+                    <div class="flex gap-3 mb-8">
+                        <input type="text" id="admin-brand-input" placeholder="Nombre empresa..." class="flex-grow bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none">
+                        <button onclick="addBrand()" class="bg-accent text-slate-950 px-5 rounded-xl font-bold"><i class="fas fa-plus"></i></button>
                     </div>
-                    <div class="flex gap-3 mb-6 shrink-0">
-                        <input type="text" id="admin-brand-input" placeholder="Nombre de nueva empresa..." class="flex-grow bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent">
-                        <button onclick="addBrand()" class="bg-accent hover:bg-teal-300 text-slate-950 px-5 rounded-xl font-bold transition-colors">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    <!-- Lista de empresas tipo carpeta -->
-                    <div id="admin-brands-list" class="space-y-4 overflow-y-auto pr-2 flex-grow custom-scrollbar"></div>
+                    <div id="admin-brands-list" class="space-y-4"></div>
                 </div>
 
-                <!-- Columna Derecha: Formulario -->
-                <div class="lg:col-span-7 glass-card p-8 rounded-[2rem] h-fit">
-                    <div class="flex items-center gap-3 mb-6">
-                        <i class="fas fa-cloud-upload-alt text-accent"></i>
-                        <h3 class="text-sm font-black uppercase tracking-widest">Cargar Nuevo Prototipo</h3>
-                    </div>
+                <div class="lg:col-span-7 glass-card p-8 rounded-[2rem]">
+                    <h3 class="text-sm font-black uppercase tracking-widest mb-6"><i class="fas fa-upload mr-2 text-accent"></i> Nuevo Prototipo</h3>
                     <form id="admin-sample-form" class="space-y-5">
-                        <div class="grid md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Asignar Empresa</label>
-                                <select id="admin-select-brand" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white"></select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Material / Esquema</label>
-                                <select id="admin-sample-scheme" class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white">
-                                    <option value="Negro Onyx">Negro Onyx</option>
-                                    <option value="Blanco Mate">Blanco Mate</option>
-                                    <option value="Vextli Teal">Vextli Teal</option>
-                                    <option value="Original">Original</option>
-                                </select>
-                            </div>
+                        <select id="admin-select-brand" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"></select>
+                        <input type="text" id="admin-sample-name" placeholder="Nombre del modelo..." required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none">
+                        <textarea id="admin-sample-desc" placeholder="Descripción..." class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none h-24 resize-none"></textarea>
+                        <div class="border-2 border-dashed border-white/10 rounded-xl p-6 text-center">
+                            <input type="file" id="admin-file" accept=".glb,.stl" required class="text-xs text-slate-400">
                         </div>
-                        <input type="text" id="admin-sample-name" placeholder="Nombre del Modelo (Ej. Llavero NFC Corp)" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white">
-                        <textarea id="admin-sample-desc" rows="2" placeholder="Descripción técnica del prototipo..." class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent text-white resize-none"></textarea>
-                        <div class="border-2 border-dashed border-white/10 hover:border-accent/50 transition-colors rounded-xl p-6 text-center bg-slate-950/30">
-                            <input type="file" id="admin-file" accept=".stl,.glb" required class="text-xs text-slate-300 w-full cursor-pointer">
-                        </div>
-                        <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-all">
-                            Subir Prototipo
-                        </button>
+                        <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-colors">Subir Prototipo</button>
                     </form>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="border-t border-white/5 bg-slate-950/50 mt-auto relative z-10">
-        <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-2 opacity-50">
-                <i class="fas fa-cube text-accent"></i>
-                <span class="text-xs font-bold tracking-widest uppercase">Vextli Portal</span>
-            </div>
-            <p class="text-[10px] text-slate-500 uppercase tracking-widest">© 2026 Vextli. Todos los derechos reservados.</p>
-        </div>
-    </footer>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Importante: Se agregó arrayRemove aquí
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -322,203 +225,129 @@
 
         const appIdentifier = 'vextli-portal-v1';
         let db, auth, brandsData = [];
-        let isAutoRotate = false;
-        let currentBrand = null;
 
-        // Initialize App
+        // Init Firebase
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
-        // --- SISTEMA DE NOTIFICACIONES (Reemplaza los alert) ---
-        window.showToast = (message, type = 'success') => {
+        // Toast Helper
+        window.showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-            
-            const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
-            toast.innerHTML = `${icon} <span>${message}</span>`;
-            
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : 'fa-info'}-circle"></i><span>${msg}</span>`;
             container.appendChild(toast);
-            
-            // Forzar reflow para la animación
             setTimeout(() => toast.classList.add('show'), 10);
-            
-            // Eliminar después de 3.5 segundos
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
-            }, 3500);
+            }, 3000);
         };
 
-        // Global functions for HTML access
-        window.showView = (view) => {
-            ['home', 'samples', 'viewer', 'admin'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden');
-            });
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            
-            if (view !== 'viewer') {
-                isAutoRotate = false;
-                const btn = document.getElementById('btn-rotate');
-                if(btn) btn.classList.remove('active');
-                const mv = document.getElementById('mv-container');
-                if(mv) mv.removeAttribute('auto-rotate');
-            }
+        // UI Handlers
+        window.showView = (v) => {
+            ['home', 'samples', 'viewer', 'admin'].forEach(view => document.getElementById(`view-${view}`).classList.add('hidden'));
+            document.getElementById(`view-${v}`).classList.remove('hidden');
         };
 
         window.requestAdminAccess = () => {
-            // Un pequeño modal visual podría reemplazar esto en el futuro, pero prompt es funcional por ahora
-            const pass = prompt("🔑 Código de acceso Vextli:");
-            if (pass === "vextli") {
-                window.showView('admin');
-                showToast("Acceso concedido al panel de administrador");
-            } else if (pass !== null) {
-                showToast("Código incorrecto", "error");
-            }
+            const p = prompt("Acceso Vextli:");
+            if(p === "vextli") { showView('admin'); showToast("Admin Logged In"); }
         };
 
-        window.toggleAutoRotate = () => {
-            isAutoRotate = !isAutoRotate;
-            const mv = document.getElementById('mv-container');
-            const btn = document.getElementById('btn-rotate');
-            if (isAutoRotate) {
-                mv.setAttribute('auto-rotate', '');
-                btn.classList.add('active');
-            } else {
-                mv.removeAttribute('auto-rotate');
-                btn.classList.remove('active');
-            }
-        };
-
-        window.resetCamera = () => {
-            const mv = document.getElementById('mv-container');
-            mv.cameraOrbit = "0deg 75deg 105%";
-        };
-
-        window.openBrand = (brand) => {
-            currentBrand = brand;
-            document.getElementById('brand-title').innerText = brand.name;
-            const grid = document.getElementById('samples-grid');
-            
-            if (!brand.samples || brand.samples.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center text-slate-500 uppercase text-xs font-bold tracking-widest">Sin prototipos asignados</div>`;
-            } else {
-                grid.innerHTML = brand.samples.map(s => `
-                    <div class="glass-card p-6 rounded-[2rem] cursor-pointer hover:border-accent/50 group flex flex-col h-full" onclick='openViewer(${JSON.stringify(s)})'>
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-white/5 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
-                                <i class="fas fa-cube text-xl text-accent"></i>
-                            </div>
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-slate-500 bg-black/40 px-2 py-1 rounded border border-white/5">${s.date || 'Reciente'}</span>
-                        </div>
-                        <h4 class="font-black italic uppercase text-lg mb-2">${s.name}</h4>
-                        <p class="text-xs text-slate-400 line-clamp-2">${s.desc || 'Sin descripción'}</p>
-                    </div>
-                `).join('');
-            }
-            window.showView('samples');
-        };
-
-        window.openViewer = async (sample) => {
-            window.showView('viewer');
-            document.getElementById('sample-name-viewer').innerText = sample.name;
-            document.getElementById('sample-desc-viewer').innerText = sample.desc;
-            document.getElementById('color-badge').innerText = sample.scheme;
-            
-            const loader = document.getElementById('loading-indicator');
-            loader.classList.remove('hidden');
-            
-            try {
-                const fileDoc = await getDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sample.id));
-                if (fileDoc.exists()) {
-                    const mv = document.getElementById('mv-container');
-                    mv.src = fileDoc.data().fileData;
-                    mv.addEventListener('load', () => loader.classList.add('hidden'), { once: true });
-                } else {
-                    throw new Error("Archivo no encontrado en la base de datos");
-                }
-            } catch (err) {
-                console.error("Error cargando modelo:", err);
-                loader.classList.add('hidden');
-                showToast("Error al cargar el archivo 3D", "error");
-            }
-        };
+        // --- CRUD OPERATIONS ---
 
         window.addBrand = async () => {
             const input = document.getElementById('admin-brand-input');
             const name = input.value.trim();
-            if (!name) return;
-            
-            const brandId = 'b_' + Date.now();
+            if(!name) return;
+            const id = 'brand_' + Date.now();
             try {
-                await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                    id: brandId,
-                    name: name,
-                    samples: [],
-                    createdAt: Date.now()
+                await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id), {
+                    id, name, samples: [], createdAt: Date.now()
                 });
                 input.value = '';
-                showToast(`Carpeta de empresa "${name}" creada`);
-            } catch (err) {
-                console.error("Error agregando empresa:", err);
-                showToast("Error al crear la empresa", "error");
-            }
+                showToast(`Empresa "${name}" creada`);
+            } catch(e) { showToast("Error al crear empresa", "error"); }
         };
 
-        // --- FUNCIONES DE BORRADO MEJORADAS ---
-        window.deleteBrand = async (id) => {
-            const brandName = brandsData.find(b => b.id === id)?.name || "esta empresa";
-            if (confirm(`¿Eliminar la empresa "${brandName}" permanentemente?\n\n⚠️ Esto eliminará su carpeta y el acceso a los prototipos.`)) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id));
-                    showToast("Empresa eliminada correctamente");
-                } catch (err) {
-                    console.error("Error al borrar empresa:", err);
-                    showToast("Error de conexión al borrar", "error");
+        // ELIMINAR EMPRESA (CORREGIDO)
+        window.deleteBrand = async (brandId) => {
+            if(!confirm("¿Eliminar esta empresa y todos sus prototipos asociados?")) return;
+            try {
+                // Buscamos la empresa en los datos locales para saber qué prototipos tiene
+                const brand = brandsData.find(b => b.id === brandId);
+                
+                // 1. Borramos los archivos 3D pesados de cada prototipo primero
+                if(brand && brand.samples) {
+                    for(const s of brand.samples) {
+                        await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', s.id));
+                    }
                 }
+
+                // 2. Borramos el documento de la empresa
+                await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId));
+                showToast("Empresa eliminada por completo");
+            } catch(e) {
+                console.error(e);
+                showToast("Error al eliminar de Firebase", "error");
             }
         };
 
         window.deleteSample = async (brandId, sampleId) => {
-            if (confirm("¿Estás seguro de que quieres borrar este prototipo?")) {
-                try {
-                    // Localizar el prototipo en memoria
-                    const brand = brandsData.find(b => b.id === brandId);
-                    const sampleObj = brand.samples.find(s => s.id === sampleId);
-
-                    if (sampleObj) {
-                        // 1. Borrar el archivo pesado (Base64) de la base de datos
-                        await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId));
-                        
-                        // 2. Quitar el registro del prototipo del arreglo de la empresa
-                        await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                            samples: arrayRemove(sampleObj)
-                        });
-                        
-                        showToast(`Prototipo "${sampleObj.name}" eliminado`);
-                    }
-                } catch (err) {
-                    console.error("Error al borrar prototipo:", err);
-                    showToast("Error al borrar el prototipo", "error");
+            if(!confirm("¿Eliminar este prototipo?")) return;
+            try {
+                const brand = brandsData.find(b => b.id === brandId);
+                const sample = brand.samples.find(s => s.id === sampleId);
+                if(sample) {
+                    await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId));
+                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
+                        samples: arrayRemove(sample)
+                    });
+                    showToast("Prototipo borrado");
                 }
-            }
+            } catch(e) { showToast("Error al borrar", "error"); }
         };
 
-        // Firebase Auth & Sync
+        window.openBrand = (brand) => {
+            document.getElementById('brand-title').innerText = brand.name;
+            const grid = document.getElementById('samples-grid');
+            grid.innerHTML = brand.samples.length ? brand.samples.map(s => `
+                <div class="glass-card p-6 rounded-3xl cursor-pointer hover:border-accent/40" onclick='openViewer(${JSON.stringify(s)})'>
+                    <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-4"><i class="fas fa-cube text-accent"></i></div>
+                    <h4 class="font-black italic uppercase">${s.name}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${s.date || ''}</p>
+                </div>
+            `).join('') : '<div class="col-span-full py-20 text-center text-slate-600">No hay prototipos</div>';
+            showView('samples');
+        };
+
+        window.openViewer = async (sample) => {
+            showView('viewer');
+            const loader = document.getElementById('loading-indicator');
+            document.getElementById('sample-name-viewer').innerText = sample.name;
+            document.getElementById('sample-desc-viewer').innerText = sample.desc || '';
+            loader.classList.remove('hidden');
+            try {
+                const f = await getDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sample.id));
+                if(f.exists()) {
+                    const mv = document.getElementById('mv-container');
+                    mv.src = f.data().fileData;
+                    mv.addEventListener('load', () => loader.classList.add('hidden'), {once: true});
+                }
+            } catch(e) { loader.classList.add('hidden'); showToast("Error cargando 3D", "error"); }
+        };
+
+        // Auth & Sync
         signInAnonymously(auth).then(() => {
-            onAuthStateChanged(auth, (u) => {
-                if (u) {
-                    const dot = document.getElementById('status-dot');
-                    const statusText = document.getElementById('auth-status');
-                    dot.classList.replace('bg-slate-600', 'bg-accent');
-                    statusText.innerText = "Sincronizado";
-                    statusText.classList.replace('text-slate-400', 'text-accent');
+            onAuthStateChanged(auth, (user) => {
+                if(user) {
+                    document.getElementById('status-dot').classList.replace('bg-slate-600', 'bg-accent');
+                    document.getElementById('auth-status').innerText = "Online";
                     
                     onSnapshot(collection(db, 'artifacts', appIdentifier, 'public', 'data', 'brands'), (snap) => {
                         brandsData = snap.docs.map(d => d.data());
-                        // Ordenar alfabéticamente para mantener orden en las carpetas
-                        brandsData.sort((a, b) => a.name.localeCompare(b.name));
                         updateUI();
                         document.getElementById('loading-home').classList.add('hidden');
                     });
@@ -527,109 +356,69 @@
         });
 
         function updateUI() {
-            const grid = document.getElementById('brands-grid');
-            const adminList = document.getElementById('admin-brands-list');
-            const brandSelect = document.getElementById('admin-select-brand');
-            
-            // --- ACTUALIZAR VISTA HOME ---
-            grid.innerHTML = brandsData.map(b => `
+            // Home Grid
+            document.getElementById('brands-grid').innerHTML = brandsData.map(b => `
                 <div class="glass-card p-8 rounded-[2rem] cursor-pointer group" onclick='openBrand(${JSON.stringify(b)})'>
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:text-accent group-hover:border-accent/30 transition-all">
-                            <i class="far fa-building"></i>
-                        </div>
-                        <span class="text-[9px] font-bold uppercase tracking-widest text-slate-500">${b.samples?.length || 0} Modelos</span>
+                    <div class="flex justify-between items-center mb-6">
+                        <i class="far fa-building text-slate-500 group-hover:text-accent transition-colors"></i>
+                        <span class="text-[10px] font-bold text-slate-600 uppercase">${b.samples?.length || 0} Modelos</span>
                     </div>
-                    <h3 class="font-black italic text-xl truncate">${b.name}</h3>
+                    <h3 class="font-black italic text-xl">${b.name}</h3>
                 </div>
             `).join('');
 
-            // --- ACTUALIZAR VISTA ADMIN (Sistema de Carpetas) ---
-            adminList.innerHTML = brandsData.map(b => `
-                <div class="bg-slate-900/40 rounded-xl border border-white/5 overflow-hidden flex flex-col transition-all hover:border-white/10">
-                    <!-- Cabecera de Empresa -->
-                    <div class="flex justify-between items-center p-4 bg-slate-800/50">
-                        <span class="text-sm font-bold text-accent"><i class="far fa-folder-open mr-2"></i> ${b.name}</span>
-                        <button onclick="deleteBrand('${b.id}')" class="text-slate-500 hover:text-red-400 p-2 transition-colors rounded-lg hover:bg-red-400/10" title="Borrar Empresa Completa">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+            // Admin List (System of folders)
+            document.getElementById('admin-brands-list').innerHTML = brandsData.map(b => `
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 overflow-hidden">
+                    <div class="p-4 bg-slate-800/50 flex justify-between items-center">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-300">${b.name}</span>
+                        <button onclick="deleteBrand('${b.id}')" class="text-slate-500 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
                     </div>
-                    
-                    <!-- Lista de Prototipos de esa Empresa -->
-                    <div class="p-3 space-y-2 bg-slate-950/40">
-                        ${b.samples && b.samples.length > 0 ? b.samples.map(s => `
-                            <div class="flex justify-between items-center p-3 rounded-lg bg-slate-900/80 border border-white/5 shadow-sm group">
-                                <div class="flex flex-col overflow-hidden">
-                                    <span class="text-xs font-bold text-slate-300 truncate">${s.name}</span>
-                                    <span class="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5"><i class="fas fa-palette mr-1"></i>${s.scheme}</span>
-                                </div>
-                                <button onclick="deleteSample('${b.id}', '${s.id}')" class="text-slate-600 hover:text-orange-400 p-2 transition-colors opacity-0 group-hover:opacity-100" title="Borrar este modelo">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                    <div class="p-3 space-y-2">
+                        ${b.samples.map(s => `
+                            <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-white/5 group">
+                                <span class="text-[11px] font-medium text-slate-400">${s.name}</span>
+                                <button onclick="deleteSample('${b.id}', '${s.id}')" class="text-slate-700 hover:text-orange-400 opacity-0 group-hover:opacity-100 transition-all"><i class="fas fa-times"></i></button>
                             </div>
-                        `).join('') : '<p class="text-[10px] text-slate-500 italic px-2 py-1">Sin prototipos asignados. Sube uno a la derecha.</p>'}
+                        `).join('')}
                     </div>
                 </div>
             `).join('');
 
-            // Actualizar Selects
-            brandSelect.innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            
-            // Actualizar Contadores
+            // Update Select & Stats
+            document.getElementById('admin-select-brand').innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
             document.getElementById('stat-brands').innerText = brandsData.length;
-            document.getElementById('stat-samples').innerText = brandsData.reduce((acc, b) => acc + (b.samples?.length || 0), 0);
         }
 
+        // Upload Logic
         document.getElementById('admin-sample-form').onsubmit = async (e) => {
             e.preventDefault();
-            const submitBtn = document.getElementById('admin-submit-btn');
-            const brandId = document.getElementById('admin-select-brand').value;
+            const btn = document.getElementById('admin-submit-btn');
             const file = document.getElementById('admin-file').files[0];
-            
-            if (!brandId || !file) return;
+            const brandId = document.getElementById('admin-select-brand').value;
+            if(!file || !brandId) return;
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Subiendo...';
+            btn.disabled = true;
+            btn.innerText = "Subiendo...";
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const base64Data = ev.target.result;
                 const sampleId = 's_' + Date.now();
-                
                 try {
-                    await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId), {
-                        fileData: base64Data
-                    });
-
-                    const sampleMeta = {
+                    await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId), { fileData: ev.target.result });
+                    const meta = {
                         id: sampleId,
                         name: document.getElementById('admin-sample-name').value,
                         desc: document.getElementById('admin-sample-desc').value,
-                        scheme: document.getElementById('admin-sample-scheme').value,
-                        date: new Date().toLocaleDateString('es-MX')
+                        date: new Date().toLocaleDateString()
                     };
-
-                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                        samples: arrayUnion(sampleMeta)
-                    });
-
-                    showToast("Prototipo subido y enlazado correctamente");
+                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), { samples: arrayUnion(meta) });
+                    showToast("Prototipo cargado");
                     e.target.reset();
-                } catch (err) {
-                    showToast("Error al procesar el archivo 3D", "error");
-                    console.error(err);
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "Subir Prototipo";
-                }
+                } catch(e) { showToast("Error al subir", "error"); }
+                btn.disabled = false;
+                btn.innerText = "Subir Prototipo";
             };
-            
-            reader.onerror = () => {
-                showToast("Error leyendo el archivo local", "error");
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Subir Prototipo";
-            };
-            
             reader.readAsDataURL(file);
         };
     </script>
