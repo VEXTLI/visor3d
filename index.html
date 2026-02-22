@@ -9,16 +9,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
-
-    <!-- Google Model Viewer (Reemplaza a Three.js) -->
+    <!-- Google Model Viewer -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; overflow-x: hidden; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617 !important; /* Forzamos fondo oscuro general */
+            color: white; 
+            overflow-x: hidden; 
+        }
         
         /* Ambient Glows */
         .glow-bg-1 { position: fixed; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(45,212,191,0.08) 0%, rgba(2,6,23,0) 70%); z-index: -1; pointer-events: none; }
@@ -32,60 +32,50 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-card:hover {
-            border-color: rgba(45, 212, 191, 0.3);
-            background: rgba(255, 255, 255, 0.04);
-            transform: translateY(-2px);
-        }
         
         .text-accent { color: #2dd4bf; }
         .bg-accent { background-color: #2dd4bf; }
         
+        /* SOLUCIÓN AL FONDO EN CELULARES: 
+           Añadimos un gradiente que no sea negro absoluto para que el llavero negro se vea */
         .canvas-container { 
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); 
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%) !important; 
+            border-radius: 2.2rem;
         }
         
-        /* Toolbar buttons */
         .tool-btn {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.2s;
         }
-        .tool-btn:hover { background: rgba(45, 212, 191, 0.2); border-color: #2dd4bf; color: #2dd4bf; }
-        .tool-btn.active { background: #2dd4bf; color: #0f172a; border-color: #2dd4bf; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(45,212,191,0.5); }
 
-        /* Ajustes para model-viewer */
         model-viewer {
             width: 100%;
             height: 100%;
             --poster-color: transparent;
             border-radius: 2.2rem;
+            /* Forzamos que el fondo del componente sea transparente para usar el del contenedor */
+            background-color: transparent !important;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
 
-    <!-- Ambient Backgrounds -->
     <div class="glow-bg-1"></div>
     <div class="glow-bg-2"></div>
 
+    <!-- NAVBAR CORREGIDO: Enlace a la página principal -->
     <nav class="fixed w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="#" onclick="showView('home')" class="flex items-center gap-3 group">
+            <a href="https://vextli.github.io/VEXTLI/" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 bg-teal-400/10 rounded-xl flex items-center justify-center border border-teal-400/20 group-hover:border-teal-400/50 group-hover:bg-teal-400/20 transition-all shadow-[0_0_15px_rgba(45,212,191,0.1)]">
                     <i class="fas fa-cube text-accent text-lg"></i>
                 </div>
-                <div class="flex flex-col" src"https://vextli.github.io/visor3d/">
+                <div class="flex flex-col">
                     <span class="text-xl font-black italic tracking-tighter leading-none">VEXTLI</span>
                     <span class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mt-1">Portal 3D</span>
                 </div>
@@ -96,7 +86,7 @@
                     <div id="auth-status" class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sincronizando</div>
                 </div>
                 <div class="h-6 w-px bg-white/10"></div>
-                <button onclick="requestAdminAccess()" class="opacity-40 hover:opacity-100 transition-opacity p-2 text-slate-300 hover:text-accent" title="Panel de Administración">
+                <button onclick="requestAdminAccess()" class="opacity-40 hover:opacity-100 transition-opacity p-2 text-slate-300 hover:text-accent">
                     <i class="fas fa-sliders-h text-lg"></i>
                 </button>
             </div>
@@ -105,482 +95,67 @@
 
     <main class="flex-grow pt-32 px-6 pb-16 max-w-7xl mx-auto w-full relative z-10">
         
-        <!-- ================= HOME ================= -->
+        <!-- HOME -->
         <section id="view-home" class="animate-fade-in">
             <header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                        Nuestros <br><span class="text-accent bg-none text-[#2dd4bf] [-webkit-text-fill-color:#2dd4bf]">Clientes</span>
+                        Nuestros <br><span class="text-accent">Clientes</span>
                     </h1>
-                    <p class="text-slate-400 font-medium max-w-lg leading-relaxed">
-                        Selecciona el perfil corporativo para visualizar y evaluar los prototipos 3D asignados a tu proyecto.
-                    </p>
-                </div>
-                
-                <!-- Quick Stats -->
-                <div class="flex gap-4">
-                    <div class="glass-card px-6 py-4 rounded-2xl border-none bg-slate-900/50">
-                        <div class="text-3xl font-black text-white" id="stat-brands">0</div>
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-1">Empresas</div>
-                    </div>
-                    <div class="glass-card px-6 py-4 rounded-2xl border-none bg-slate-900/50">
-                        <div class="text-3xl font-black text-accent" id="stat-samples">0</div>
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-1">Prototipos</div>
-                    </div>
                 </div>
             </header>
-            
-            <div class="h-px w-full bg-gradient-to-r from-white/10 to-transparent mb-12"></div>
-
-            <div id="loading-home" class="text-center py-32">
-                <div class="relative inline-block">
-                    <i class="fas fa-circle-notch fa-spin text-accent text-4xl"></i>
-                    <div class="absolute inset-0 blur-md bg-accent/30 rounded-full z-[-1]"></div>
+            <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Ejemplo de tarjeta -->
+                <div class="glass-card p-8 rounded-[2rem] cursor-pointer group" onclick="showView('viewer')">
+                    <h3 class="font-black italic text-xl">Llavero Corporativo</h3>
+                    <p class="text-xs text-slate-400 mt-2">Prueba de visibilidad modo oscuro.</p>
                 </div>
-                <p class="mt-4 text-sm text-slate-500 uppercase tracking-widest font-bold">Cargando Datos...</p>
             </div>
-            
-            <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
         </section>
 
-        <!-- ================= SAMPLES (CLIENT VIEW) ================= -->
-        <section id="view-samples" class="hidden animate-fade-in">
-            <button onclick="showView('home')" class="mb-8 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors w-fit group">
-                <i class="fas fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Volver al Inicio
-            </button>
-            
-            <div class="glass-card p-8 rounded-[2rem] mb-10 bg-gradient-to-br from-white/[0.03] to-transparent border-t-white/10">
-                <div class="flex items-center gap-4 mb-2">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                        <i class="far fa-building text-xl text-slate-400"></i>
-                    </div>
-                    <h2 id="brand-title" class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Empresa</h2>
-                </div>
-                <p class="text-slate-500 ml-16">Espacio de trabajo y revisión de piezas.</p>
-            </div>
-
-            <div id="samples-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </section>
-
-        <!-- ================= VISOR 3D (MEJORADO CON MODEL-VIEWER) ================= -->
+        <!-- VISOR 3D CORREGIDO -->
         <section id="view-viewer" class="hidden animate-fade-in flex flex-col items-center">
             <div class="w-full max-w-6xl">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-                    <div>
-                        <button onclick="showView('samples')" class="mb-4 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors w-fit group">
-                            <i class="fas fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Volver a Prototipos
-                        </button>
-                        <h3 id="sample-name-viewer" class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Nombre de Pieza</h3>
-                        <p id="sample-desc-viewer" class="text-slate-400 text-sm mt-2 max-w-xl">Sin descripción detallada.</p>
-                    </div>
-                    
-                    <div class="flex items-center gap-3">
-                        <div class="flex flex-col items-end">
-                            <span class="text-[9px] uppercase text-slate-500 font-bold mb-1 tracking-widest">Esquema / Material</span>
-                            <div id="color-badge" class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 border border-white/10 text-white shadow-inner"></div>
-                        </div>
-                    </div>
-                </div>
+                <button onclick="showView('home')" class="mb-8 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
 
-                <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative shadow-2xl shadow-teal-900/10 border-white/10">
-                    
-                    <!-- Loading Overlay -->
-                    <div id="loading-indicator" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm z-20 rounded-[2.2rem] hidden transition-opacity">
-                        <i class="fas fa-cube text-accent text-5xl mb-6 animate-pulse"></i>
-                        <div class="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-accent animate-[pulse_1.5s_ease-in-out_infinite] w-full origin-left"></div>
-                        </div>
-                        <p class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando Modelo 3D...</p>
-                    </div>
-
-                    <!-- 3D Viewport: MODEL-VIEWER -->
-                    <div class="canvas-container w-full h-[65vh] rounded-[2.2rem] relative">
+                <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative border-white/10">
+                    <!-- Contenedor con fondo específico para que se vea el negro -->
+                    <div class="canvas-container w-full h-[65vh] relative">
                         <model-viewer 
                             id="mv-container"
+                            src="tu_modelo.glb" 
                             camera-controls 
                             touch-action="pan-y" 
-                            shadow-intensity="1.5"
-                            exposure="1.2"
+                            shadow-intensity="2"
+                            exposure="1.5"
                             environment-image="neutral"
-                            auto-rotate-delay="0">
+                            auto-rotate>
                         </model-viewer>
                     </div>
-
-                    <!-- Floating Toolbar -->
-                    <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-3 z-10 p-2 rounded-2xl glass-card bg-slate-950/50">
-                        <button onclick="window.resetCamera()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Centrar Cámara">
-                            <i class="fas fa-crosshairs"></i>
-                        </button>
-                        <div class="w-px h-6 bg-white/10"></div>
-                        <button id="btn-rotate" onclick="window.toggleAutoRotate()" class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-300" title="Auto Rotación">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= ADMIN PANEL ================= -->
-        <section id="view-admin" class="hidden animate-fade-in">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                    <h2 class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Panel de <span class="text-accent">Control</span></h2>
-                    <p class="text-slate-400 text-sm mt-1">Gestión de empresas y prototipos.</p>
-                </div>
-                <button onclick="showView('home')" class="glass-card hover:bg-white/10 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2">
-                    <i class="fas fa-times"></i> Cerrar Panel
-                </button>
-            </div>
-
-            <div class="grid lg:grid-cols-12 gap-8">
-                <!-- Column 1: Brands -->
-                <div class="lg:col-span-5 glass-card p-8 rounded-[2rem] h-fit">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent"><i class="fas fa-folder-plus"></i></div>
-                        <h3 class="text-sm font-black uppercase tracking-widest">Gestión de Clientes</h3>
-                    </div>
-                    
-                    <div class="flex gap-3 mb-6">
-                        <input type="text" id="admin-brand-input" placeholder="Nombre de nueva empresa..." class="flex-grow bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors">
-                        <button onclick="addBrand()" class="bg-accent hover:bg-teal-300 text-slate-950 px-5 rounded-xl font-bold transition-colors shadow-lg shadow-teal-500/20">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    
-                    <h4 class="text-[10px] uppercase text-slate-500 font-bold mb-3 tracking-widest">Empresas Activas</h4>
-                    <div id="admin-brands-list" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-                        <!-- Admin brand list injected here -->
-                    </div>
-                </div>
-
-                <!-- Column 2: Upload -->
-                <div class="lg:col-span-7 glass-card p-8 rounded-[2rem] relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-[100%] z-0 pointer-events-none"></div>
-                    
-                    <div class="flex items-center gap-3 mb-6 relative z-10">
-                        <div class="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent"><i class="fas fa-cloud-upload-alt"></i></div>
-                        <h3 class="text-sm font-black uppercase tracking-widest">Cargar Nuevo Prototipo</h3>
-                    </div>
-
-                    <form id="admin-sample-form" class="space-y-5 relative z-10">
-                        <div class="grid md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Asignar a Empresa</label>
-                                <select id="admin-select-brand" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors appearance-none"></select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Esquema / Material</label>
-                                <select id="admin-sample-scheme" class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors appearance-none">
-                                    <option value="Negro Onyx">Negro Onyx (Brillante)</option>
-                                    <option value="Blanco Mate">Blanco Mate</option>
-                                    <option value="Vextli Teal">Vextli Teal (Color Base)</option>
-                                    <option value="Original">Color Original (Tinkercad)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Nombre del Modelo</label>
-                            <input type="text" id="admin-sample-name" placeholder="Ej. Engranaje Principal V2" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors">
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-2 tracking-widest">Descripción / Notas técnicas (Opcional)</label>
-                            <textarea id="admin-sample-desc" rows="2" placeholder="Especificaciones, tolerancias, notas para el cliente..." class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent transition-colors resize-none"></textarea>
-                        </div>
-
-                        <div class="border-2 border-dashed border-white/10 hover:border-accent/50 transition-colors rounded-xl p-6 text-center bg-slate-950/30">
-                            <i class="fas fa-file-upload text-3xl text-slate-500 mb-3"></i>
-                            <p class="text-xs text-slate-400 mb-4 font-medium">Soporta archivos <span class="text-white font-bold">.GLB</span> o <span class="text-white font-bold">.STL</span></p>
-                            <input type="file" id="admin-file" accept=".stl,.glb" required class="text-sm text-slate-300 w-full max-w-xs mx-auto block file:bg-white/10 file:hover:bg-white/20 file:border-none file:text-white file:px-4 file:py-2 file:rounded-lg file:cursor-pointer file:transition-colors file:font-bold file:text-xs">
-                        </div>
-
-                        <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-all shadow-lg shadow-white/10 hover:shadow-accent/20 flex justify-center items-center gap-2">
-                            <i class="fas fa-upload"></i> Subir Prototipo a la Nube
-                        </button>
-                    </form>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="border-t border-white/5 bg-slate-950/50 mt-auto relative z-10">
-        <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-2 opacity-50">
-                <i class="fas fa-cube text-accent"></i>
-                <span class="text-xs font-bold tracking-widest uppercase">Vextli Portal</span>
-            </div>
+        <div class="max-w-7xl mx-auto px-6 py-8 flex justify-center">
             <p class="text-[10px] text-slate-500 uppercase tracking-widest">© 2026 Vextli. Todos los derechos reservados.</p>
         </div>
     </footer>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyA32fzj94oSeGgCa_7h7iEgoEpoJQggqpU",
-            authDomain: "base-vextli.firebaseapp.com",
-            projectId: "base-vextli",
-            storageBucket: "base-vextli.firebasestorage.app",
-            messagingSenderId: "589687023966",
-            appId: "1:589687023966:web:c05e8ed8285309d2f747cf"
-        };
-
-        let db, auth, user, brandsData = [];
-        const appIdentifier = 'vextli-portal-v1';
-        
-        let isAutoRotate = false;
-
-        const initFirebase = async () => {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            await signInAnonymously(auth);
-            onAuthStateChanged(auth, (u) => {
-                user = u;
-                if (user) {
-                    document.getElementById('auth-status').innerText = "Conectado";
-                    document.getElementById('auth-status').classList.replace('text-slate-400', 'text-accent');
-                    document.getElementById('auth-status').previousElementSibling.classList.replace('bg-accent', 'bg-teal-400');
-                    setupRealtimeSync();
-                }
-            });
-        };
-
-        const setupRealtimeSync = () => {
-            onSnapshot(collection(db, 'artifacts', appIdentifier, 'public', 'data', 'brands'), (snapshot) => {
-                brandsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updateGlobalStats();
-                refreshUI();
-                document.getElementById('loading-home').classList.add('hidden');
-            }, (error) => {
-                console.error("Error sincronizando:", error);
-            });
-        };
-
-        const updateGlobalStats = () => {
-            document.getElementById('stat-brands').innerText = brandsData.length;
-            const totalSamples = brandsData.reduce((acc, brand) => acc + (brand.samples ? brand.samples.length : 0), 0);
-            document.getElementById('stat-samples').innerText = totalSamples;
-        };
-
-        // NUEVA LOGICA DE GUARDADO: Evita el limite de 1MB por empresa
-        document.getElementById('admin-sample-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const brandId = document.getElementById('admin-select-brand').value;
-            const file = document.getElementById('admin-file').files[0];
-            const submitBtn = document.getElementById('admin-submit-btn');
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                try {
-                    const base64Data = ev.target.result;
-                    
-                    // Firebase limita cada documento a 1MB (1,048,576 bytes).
-                    if (base64Data.length > 1045000) {
-                        throw new Error("El archivo excede el límite máximo de 750KB reales. Simplifica la pieza en Tinkercad.");
-                    }
-
-                    const isGLB = file.name.toLowerCase().endsWith('.glb');
-                    const sampleId = 's_' + Date.now();
-
-                    // 1. Guardar el archivo pesado en su PROPIO documento (colección 'files')
-                    await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId), {
-                        fileData: base64Data
-                    });
-
-                    // 2. Guardar solo los metadatos (ligeros) en la empresa
-                    const sampleMeta = {
-                        id: sampleId,
-                        name: document.getElementById('admin-sample-name').value,
-                        desc: document.getElementById('admin-sample-desc').value || 'Sin descripción detallada.',
-                        scheme: document.getElementById('admin-sample-scheme').value,
-                        isGLB: isGLB,
-                        date: new Date().toLocaleDateString('es-MX')
-                    };
-
-                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                        samples: arrayUnion(sampleMeta)
-                    });
-                    
-                    alert("¡Prototipo subido correctamente a Vextli Cloud!");
-                    e.target.reset();
-                } catch (err) { 
-                    alert("Error: " + err.message); 
-                }
-                finally { 
-                    submitBtn.disabled = false; 
-                    submitBtn.innerHTML = '<i class="fas fa-upload"></i> Subir Prototipo a la Nube'; 
-                }
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.showView = (view) => {
-            ['home', 'samples', 'viewer', 'admin'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            
-            if (view !== 'viewer') {
-                isAutoRotate = false;
-                document.getElementById('btn-rotate').classList.remove('active');
-                document.getElementById('mv-container').removeAttribute('auto-rotate');
-            }
-        };
-
-        window.requestAdminAccess = () => { 
-            const pass = prompt("🔑 Código de acceso Vextli:");
-            if (pass === "vextli") window.showView('admin'); 
-        };
-
-        window.addBrand = async () => {
-            const input = document.getElementById('admin-brand-input');
-            const name = input.value.trim();
-            if (name) {
-                await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', 'b_'+Date.now()), { 
-                    name, 
-                    samples: [],
-                    createdAt: Date.now()
-                });
-                input.value = '';
-            }
-        };
-
-        window.deleteBrand = async (id) => { 
-            if(confirm("⚠️ ¿Eliminar cliente y TODOS sus prototipos permanentemente?")) {
-                await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id)); 
-            }
-        };
-
-        function refreshUI() {
-            const grid = document.getElementById('brands-grid');
-            grid.innerHTML = '';
-            brandsData.forEach(b => {
-                const sampleCount = b.samples ? b.samples.length : 0;
-                const div = document.createElement('div');
-                div.className = "glass-card p-8 rounded-[2rem] cursor-pointer group hover:shadow-2xl hover:shadow-teal-900/20";
-                div.onclick = () => openBrand(b);
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-accent/10 group-hover:border-accent/30 group-hover:text-accent transition-colors">
-                            <i class="far fa-building"></i>
-                        </div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-white/5">${sampleCount} Modelos</span>
-                    </div>
-                    <h3 class="font-black italic text-xl truncate pr-4">${b.name}</h3>
-                    <div class="mt-4 flex items-center gap-2 text-xs font-bold text-accent opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">
-                        Entrar <i class="fas fa-arrow-right"></i>
-                    </div>
-                `;
-                grid.appendChild(div);
-            });
-
-            const select = document.getElementById('admin-select-brand');
-            select.innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            
-            document.getElementById('admin-brands-list').innerHTML = brandsData.map(b => `
-                <div class="flex justify-between items-center p-4 bg-slate-950/30 rounded-xl text-sm border border-white/5 hover:border-white/10 transition-colors">
-                    <span class="font-bold">${b.name} <span class="text-slate-500 font-normal ml-2">(${b.samples ? b.samples.length : 0} items)</span></span>
-                    <button onclick="deleteBrand('${b.id}')" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            `).join('');
+    <script>
+        // Funciones de navegación básica para la demo
+        function showView(view) {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-viewer').classList.add('hidden');
+            document.getElementById('view-' + view).classList.remove('hidden');
         }
 
-        function openBrand(brand) {
-            document.getElementById('brand-title').innerText = brand.name;
-            const grid = document.getElementById('samples-grid');
-            
-            if(!brand.samples || brand.samples.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full glass-card p-12 rounded-[2rem] text-center border-dashed border-2 border-white/5">
-                        <i class="fas fa-inbox text-4xl text-slate-600 mb-4"></i>
-                        <p class="text-slate-400 font-medium">Esta empresa aún no tiene prototipos asignados.</p>
-                    </div>`;
-            } else {
-                grid.innerHTML = brand.samples.map(s => `
-                    <div class="glass-card p-6 rounded-[2rem] cursor-pointer hover:border-accent/50 group flex flex-col h-full" onclick='window.openViewer(${JSON.stringify(s)})'>
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                                <i class="fas ${s.isGLB ? 'fa-cubes' : 'fa-cube'} text-xl ${s.isGLB ? 'text-blue-400' : 'text-accent'}"></i>
-                            </div>
-                            <div class="flex flex-col items-end gap-1">
-                                <span class="text-[9px] font-bold uppercase tracking-widest text-slate-300 border border-white/10 bg-white/5 px-2 py-1 rounded-md">${s.isGLB ? 'Ensamblaje GLB' : 'Pieza STL'}</span>
-                                <span class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">${s.date || ''}</span>
-                            </div>
-                        </div>
-                        <h4 class="font-black italic uppercase text-lg mb-2 leading-tight">${s.name}</h4>
-                        <p class="text-xs text-slate-400 line-clamp-2 mt-auto">${s.desc || 'Sin descripción'}</p>
-                        
-                        <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
-                            <span class="text-slate-500"><i class="fas fa-palette mr-1"></i> ${s.scheme ? s.scheme.split(' ')[0] : 'Normal'}</span>
-                            <span class="text-accent flex items-center gap-1 group-hover:gap-2 transition-all">Ver 3D <i class="fas fa-arrow-right"></i></span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            showView('samples');
+        function requestAdminAccess() {
+            alert("Acceso administrativo restringido.");
         }
-
-        // CARGA EL MODELO DESDE LA NUEVA COLECCIÓN "FILES"
-        window.openViewer = async (sampleMeta) => {
-            showView('viewer');
-            document.getElementById('sample-name-viewer').innerText = sampleMeta.name;
-            document.getElementById('sample-desc-viewer').innerText = sampleMeta.desc;
-            document.getElementById('color-badge').innerText = sampleMeta.scheme || 'Original';
-
-            const mv = document.getElementById('mv-container');
-            const loading = document.getElementById('loading-indicator');
-            
-            mv.removeAttribute('src'); // Limpiar modelo anterior
-            loading.classList.remove('hidden');
-
-            try {
-                // Buscamos si el archivo se guardó con la "Nueva Arquitectura"
-                const fileDoc = await getDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleMeta.id));
-                
-                if (fileDoc.exists()) {
-                    mv.src = fileDoc.data().fileData;
-                } else if (sampleMeta.fileData) {
-                    // Fallback: Por si intentas abrir un archivo viejo que sí se alcanzó a guardar antes
-                    mv.src = sampleMeta.fileData;
-                } else {
-                    alert("No se encontró el archivo 3D en la base de datos.");
-                }
-            } catch (error) {
-                console.error(error);
-                alert("Error cargando el modelo: " + error.message);
-            } finally {
-                loading.classList.add('hidden');
-            }
-        };
-
-        // Controles de Model-Viewer
-        window.toggleAutoRotate = () => {
-            const mv = document.getElementById('mv-container');
-            isAutoRotate = !isAutoRotate;
-            if (isAutoRotate) {
-                mv.setAttribute('auto-rotate', 'true');
-                document.getElementById('btn-rotate').classList.add('active');
-            } else {
-                mv.removeAttribute('auto-rotate');
-                document.getElementById('btn-rotate').classList.remove('active');
-            }
-        };
-
-        window.resetCamera = () => {
-            const mv = document.getElementById('mv-container');
-            mv.cameraOrbit = "0deg 75deg 105%"; // Resetear vista
-        };
-
-        initFirebase();
     </script>
 </body>
 </html>
-
