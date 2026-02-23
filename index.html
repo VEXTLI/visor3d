@@ -3,207 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VEXTLI | Centro de Prototipos 3D</title>
+    <title>VEXTLI | Experience Center</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     
     <!-- Google Model Viewer -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: white; overflow-x: hidden; }
-        
-        .glow-bg-1 { position: fixed; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(45,212,191,0.08) 0%, rgba(2,6,23,0) 70%); z-index: -1; pointer-events: none; }
-        .glow-bg-2 { position: fixed; bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(56,189,248,0.05) 0%, rgba(2,6,23,0) 70%); z-index: -1; pointer-events: none; }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        :root {
+            --accent: #2dd4bf;
+            --accent-glow: rgba(45, 212, 191, 0.4);
+            --bg-dark: #010409;
+            --surface: rgba(13, 17, 23, 0.7);
+            --border: rgba(255, 255, 255, 0.05);
         }
-        .glass-card:hover {
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: #e6edf3; 
+            overflow-x: hidden; 
+            scroll-behavior: smooth;
+        }
+
+        /* Textura de Ruido */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+            animation: orbFloat 20s infinite alternate;
+        }
+        .orb-1 { top: -10%; right: -10%; width: min(500px, 80vw); height: min(500px, 80vw); background: var(--accent); }
+        .orb-2 { bottom: -10%; left: -5%; width: min(600px, 90vw); height: min(600px, 90vw); background: #3b82f6; animation-delay: -5s; }
+
+        @keyframes orbFloat {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        nav {
+            background: rgba(1, 4, 9, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bento-card {
+            background: var(--surface);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 220px;
+        }
+
+        .bento-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(45, 212, 191, 0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .bento-card:hover {
+            transform: translateY(-8px);
             border-color: rgba(45, 212, 191, 0.3);
-            background: rgba(255, 255, 255, 0.04);
-            transform: translateY(-2px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5);
         }
-        
-        .text-accent { color: #2dd4bf; }
-        .bg-accent { background-color: #2dd4bf; }
-        
-        .canvas-container { 
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); 
-        }
-        
-        .tool-btn {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s;
-        }
-        .tool-btn:hover { background: rgba(45, 212, 191, 0.2); border-color: #2dd4bf; color: #2dd4bf; }
-        .tool-btn.active { background: #2dd4bf; color: #0f172a; border-color: #2dd4bf; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
+        /* En dispositivos táctiles deshabilitamos el hover agresivo */
+        @media (hover: none) {
+            .bento-card:hover { transform: none; }
+        }
+
+        .viewport-frame {
+            position: relative;
+            background: #000;
+            border-radius: 24px;
+            padding: 8px;
+            box-shadow: 0 0 0 1px var(--border), 0 20px 50px rgba(0,0,0,0.8);
+        }
+        @media (min-width: 768px) {
+            .viewport-frame { border-radius: 40px; padding: 12px; }
+        }
+
+        .viewport-inner {
+            background: radial-gradient(circle at 50% 50%, #161b22 0%, #010409 100%);
+            border-radius: 18px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .viewport-inner { border-radius: 32px; }
+        }
+
+        .btn-premium {
+            background: #fff;
+            color: #000;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+        }
+        .btn-premium:hover {
+            transform: scale(1.02);
+            background: var(--accent);
+            box-shadow: 0 15px 30px var(--accent-glow);
+        }
+
         model-viewer {
             width: 100%;
             height: 100%;
+            display: block;
             --poster-color: transparent;
-            border-radius: 2.2rem;
-            outline: none;
         }
 
-        /* Notifications */
-        #toast-container {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .stagger-1 { animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        @keyframes slideUp {
+            from { transform: translateY(40px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
         }
-        .toast {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid #2dd4bf;
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-            transform: translateX(120%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        .toast.show { transform: translateX(0); }
-        .toast.error { border-left-color: #ef4444; }
-        .toast.error i { color: #ef4444; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative">
+<body class="min-h-screen">
 
-    <div class="glow-bg-1"></div>
-    <div class="glow-bg-2"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
     <div id="toast-container"></div>
 
-    <nav class="fixed w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+    <nav class="fixed w-full z-50 px-4 md:px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="#" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 bg-teal-400/10 rounded-xl flex items-center justify-center border border-teal-400/20 group-hover:border-teal-400/50 group-hover:bg-teal-400/20 transition-all">
-                    <i class="fas fa-cube text-accent text-lg"></i>
+            <a href="https://vextli.github.io/VEXTLI/" class="flex items-center gap-3 md:gap-4 cursor-pointer group">
+                <div class="relative w-8 h-8 md:w-10 md:h-10">
+                    <div class="absolute inset-0 bg-accent rounded-lg md:rounded-xl blur-lg opacity-20 group-hover:opacity-60 transition-opacity"></div>
+                    <div class="relative w-full h-full bg-slate-900 border border-white/10 rounded-lg md:rounded-xl flex items-center justify-center">
+                        <i class="fas fa-microchip text-accent text-sm md:text-base"></i>
+                    </div>
                 </div>
-                <div class="flex flex-col">
-                    <span class="text-xl font-black italic tracking-tighter leading-none">VEXTLI</span>
-                    <span class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mt-1">Portal 3D</span>
+                <div class="flex flex-col text-white">
+                    <span class="text-lg md:text-xl font-black italic tracking-tighter uppercase leading-none">Vextli</span>
+                    <span class="text-[8px] md:text-[9px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-slate-500 font-bold">Portal NFC</span>
                 </div>
             </a>
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-2">
-                    <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></div>
-                    <div id="auth-status" class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Iniciando...</div>
+
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="hidden sm:flex flex-col items-end">
+                    <div id="auth-status" class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-accent">Sincronizado</div>
+                    <div class="text-[8px] md:text-[9px] text-slate-500 font-bold uppercase tracking-tighter">Nodo Querétaro</div>
                 </div>
-                <div class="h-6 w-px bg-white/10"></div>
-                <button onclick="requestAdminAccess()" class="opacity-40 hover:opacity-100 transition-opacity p-2 text-slate-300 hover:text-accent">
-                    <i class="fas fa-sliders-h text-lg"></i>
+                <button onclick="requestAdminAccess()" class="w-9 h-9 md:w-10 md:h-10 rounded-full border border-white/5 flex items-center justify-center hover:bg-white/5 transition-all">
+                    <i class="fas fa-lock-open text-[10px] md:text-xs text-slate-500"></i>
                 </button>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow pt-32 px-6 pb-16 max-w-7xl mx-auto w-full relative z-10">
+    <main class="pt-24 md:pt-32 pb-10 md:pb-20 px-4 md:px-6 max-w-7xl mx-auto relative z-10">
         
-        <!-- HOME VIEW -->
-        <section id="view-home" class="animate-fade-in">
-            <header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
-                        Nuestros <br><span class="text-accent">Clientes</span>
-                    </h1>
-                </div>
-                <div class="flex gap-4">
-                    <div class="glass-card px-6 py-4 rounded-2xl border-none bg-slate-900/50 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-white" id="stat-brands">0</div>
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-1">Empresas</div>
-                    </div>
-                </div>
-            </header>
-            <div id="loading-home" class="text-center py-32">
-                <i class="fas fa-circle-notch fa-spin text-accent text-4xl mb-4"></i>
+        <section id="view-home" class="stagger-1">
+            <div class="mb-10 md:mb-16">
+                <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black italic uppercase leading-[1] md:leading-[0.9] mb-4 md:mb-8">
+                    Centro de Prototipos<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-blue-500 inline-block py-1 md:py-2"></span>
+                </h1>
+                <p class="text-slate-500 text-base md:text-lg max-w-xl font-medium italic">Acceso a prototipado Vextli para empresas certificadas.</p>
             </div>
-            <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+
+            <div id="loading-home" class="text-center py-20"><div class="inline-block w-8 h-8 border-2 border-accent/20 border-t-accent rounded-full animate-spin"></div></div>
+            
+            <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8"></div>
         </section>
 
-        <!-- SAMPLES VIEW -->
-        <section id="view-samples" class="hidden animate-fade-in">
-            <button onclick="showView('home')" class="mb-8 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2 transition-colors">
-                <i class="fas fa-arrow-left"></i> Volver al Inicio
-            </button>
-            <div class="glass-card p-8 rounded-[2rem] mb-10">
-                <h2 id="brand-title" class="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Empresa</h2>
-            </div>
-            <div id="samples-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </section>
-
-        <!-- VIEWER VIEW -->
-        <section id="view-viewer" class="hidden animate-fade-in">
-            <div class="max-w-6xl mx-auto">
-                <button onclick="showView('samples')" class="mb-6 text-slate-400 hover:text-accent font-bold uppercase text-xs flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i> Volver a Prototipos
+        <section id="view-samples" class="hidden stagger-1">
+            <div class="flex items-center gap-4 mb-8 md:mb-12">
+                <button onclick="showView('home')" class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-white/5 flex items-center justify-center hover:bg-accent hover:text-black transition-all">
+                    <i class="fas fa-arrow-left text-sm md:text-base"></i>
                 </button>
-                <div class="glass-card rounded-[2.5rem] p-2 overflow-hidden relative shadow-2xl">
-                    <div id="loading-indicator" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 z-20 rounded-[2.2rem] hidden">
-                        <i class="fas fa-cube text-accent text-4xl animate-bounce mb-4"></i>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando 3D...</p>
-                    </div>
-                    <div class="canvas-container w-full h-[65vh] rounded-[2.2rem]">
-                        <model-viewer id="mv-container" camera-controls touch-action="none" shadow-intensity="1.5" exposure="1.2" environment-image="neutral"></model-viewer>
-                    </div>
+                <div>
+                    <h2 id="brand-title" class="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">Empresa</h2>
+                    <p class="text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-accent font-bold">Archivo de prototipos</p>
                 </div>
-                <div class="mt-6 text-center">
-                    <h3 id="sample-name-viewer" class="text-2xl font-black uppercase italic">Nombre</h3>
-                    <p id="sample-desc-viewer" class="text-slate-400 mt-2"></p>
+            </div>
+            
+            <div id="samples-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8"></div>
+        </section>
+
+        <section id="view-viewer" class="hidden stagger-1">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col lg:flex-row gap-6 md:gap-10">
+                    <div class="flex-grow">
+                        <div class="viewport-frame">
+                            <div class="viewport-inner relative h-[50vh] sm:h-[60vh] lg:h-[70vh]">
+                                <div id="loading-indicator" class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-20 hidden">
+                                    <div class="text-center">
+                                        <div class="w-10 h-10 border-2 border-accent/20 border-t-accent rounded-full animate-spin mx-auto mb-4"></div>
+                                        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-accent">Procesando Malla</div>
+                                    </div>
+                                </div>
+                                <model-viewer 
+                                    id="mv-container" 
+                                    camera-controls 
+                                    auto-rotate 
+                                    rotation-per-second="60deg" 
+                                    shadow-intensity="1" 
+                                    exposure="0.8" 
+                                    environment-image="neutral"
+                                    bounds="tight"
+                                    camera-orbit="0deg 75deg auto"
+                                    interaction-prompt="auto"
+                                    ar-modes="webxr scene-viewer quick-look">
+                                </model-viewer>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:w-80 flex flex-col justify-between py-2 md:py-6">
+                        <div>
+                            <span class="text-[9px] font-black text-accent uppercase tracking-[0.4em] block mb-2 md:mb-4">Especificaciones</span>
+                            <h3 id="sample-name-viewer" class="text-2xl md:text-4xl font-black italic uppercase mb-4 md:mb-6 leading-none">Cargando...</h3>
+                            <div class="h-px w-full bg-white/5 mb-4 md:mb-6"></div>
+                            <p id="sample-desc-viewer" class="text-slate-400 text-sm leading-relaxed mb-6 md:mb-8"></p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <button onclick="showView('samples')" class="btn-premium w-full text-[10px] uppercase">
+                                Salir del Laboratorio
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- ADMIN PANEL -->
-        <section id="view-admin" class="hidden animate-fade-in">
-            <div class="flex justify-between items-center mb-10">
-                <h2 class="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">Panel <span class="text-accent">VEXTLI</span></h2>
-                <button onclick="showView('home')" class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cerrar</button>
-            </div>
-
-            <div class="grid lg:grid-cols-12 gap-8">
-                <div class="lg:col-span-5 glass-card p-8 rounded-[2rem]">
-                    <h3 class="text-sm font-black uppercase tracking-widest mb-6"><i class="fas fa-folder mr-2 text-accent"></i> Empresas</h3>
-                    <div class="flex gap-3 mb-8">
-                        <input type="text" id="admin-brand-input" placeholder="Nombre empresa..." class="flex-grow bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none">
-                        <button onclick="addBrand()" class="bg-accent text-slate-950 px-5 rounded-xl font-bold"><i class="fas fa-plus"></i></button>
+        <section id="view-admin" class="hidden stagger-1">
+            <div class="bg-slate-900/40 border border-white/5 rounded-3xl md:rounded-[3rem] p-6 md:p-12">
+                <div class="flex flex-col lg:flex-row justify-between gap-6 md:gap-8 mb-8 md:mb-12">
+                    <div class="flex items-center gap-4 md:gap-6">
+                        <button onclick="showView('home')" class="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-white/10 flex items-center justify-center hover:bg-accent hover:text-black transition-all group">
+                            <i class="fas fa-arrow-left text-sm md:text-base"></i>
+                        </button>
+                        <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white">Vextli <span class="text-accent">Admin</span></h2>
                     </div>
-                    <div id="admin-brands-list" class="space-y-4"></div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="admin-brand-input" placeholder="Nueva empresa..." class="bg-black/50 border border-white/10 rounded-xl md:rounded-2xl px-5 md:px-6 py-3 md:py-4 text-sm outline-none focus:border-accent w-full sm:w-64 text-white">
+                        <button onclick="addBrand()" class="bg-accent text-black py-3 md:py-0 px-6 md:px-8 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-xs hover:scale-105 transition-transform">Crear</button>
+                    </div>
                 </div>
 
-                <div class="lg:col-span-7 glass-card p-8 rounded-[2rem]">
-                    <h3 class="text-sm font-black uppercase tracking-widest mb-6"><i class="fas fa-upload mr-2 text-accent"></i> Nuevo Prototipo</h3>
-                    <form id="admin-sample-form" class="space-y-5">
-                        <select id="admin-select-brand" required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none"></select>
-                        <input type="text" id="admin-sample-name" placeholder="Nombre del modelo..." required class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none">
-                        <textarea id="admin-sample-desc" placeholder="Descripción..." class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none h-24 resize-none"></textarea>
-                        <div class="border-2 border-dashed border-white/10 rounded-xl p-6 text-center">
-                            <input type="file" id="admin-file" accept=".glb,.stl" required class="text-xs text-slate-400">
+                <div class="grid lg:grid-cols-3 gap-6 md:gap-8">
+                    <div class="lg:col-span-1 space-y-3" id="admin-brands-list"></div>
+                    <div class="lg:col-span-2">
+                        <div class="bg-black/40 rounded-2xl md:rounded-[2.5rem] border border-white/5 p-6 md:p-10">
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.3em] mb-6 md:mb-8 text-accent">Nuevo Prototipo 3D</h3>
+                            <form id="admin-sample-form" class="space-y-4 md:space-y-6">
+                                <div class="grid sm:grid-cols-2 gap-4 md:gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-[9px] font-bold text-slate-500 uppercase ml-2">Destinatario</label>
+                                        <select id="admin-select-brand" class="w-full bg-black/40 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 text-sm outline-none text-white"></select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[9px] font-bold text-slate-500 uppercase ml-2">Nombre Modelo</label>
+                                        <input type="text" id="admin-sample-name" required class="w-full bg-black/40 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 text-sm outline-none text-white">
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[9px] font-bold text-slate-500 uppercase ml-2">Notas de Ingeniería</label>
+                                    <textarea id="admin-sample-desc" class="w-full bg-black/40 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 text-sm outline-none h-20 md:h-24 resize-none text-white"></textarea>
+                                </div>
+                                <div class="relative group cursor-pointer">
+                                    <input type="file" id="admin-file" accept=".glb" class="absolute inset-0 opacity-0 z-10 cursor-pointer">
+                                    <div class="border-2 border-dashed border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-10 text-center group-hover:border-accent transition-all">
+                                        <i class="fas fa-cube text-2xl md:text-3xl text-slate-700 mb-3 md:mb-4 group-hover:text-accent group-hover:rotate-12 transition-all"></i>
+                                        <p class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500">Subir Archivo .GLB</p>
+                                    </div>
+                                </div>
+                                <button type="submit" id="admin-submit-btn" class="btn-premium w-full text-[10px] md:text-[11px] uppercase">Publicar Prototipo</button>
+                            </form>
                         </div>
-                        <button type="submit" id="admin-submit-btn" class="w-full bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-accent transition-colors">Subir Prototipo</button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </section>
@@ -212,7 +318,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA32fzj94oSeGgCa_7h7iEgoEpoJQggqpU",
@@ -226,132 +332,63 @@
         const appIdentifier = 'vextli-portal-v1';
         let db, auth, brandsData = [];
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
-        // Toast Helper
         window.showToast = (msg, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : 'fa-info'}-circle"></i><span>${msg}</span>`;
+            toast.className = `fixed bottom-4 right-4 md:bottom-8 md:right-8 bg-slate-900 border border-white/10 px-5 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 shadow-2xl z-[100] transition-opacity duration-300`;
+            toast.innerHTML = `<div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${type==='success'?'bg-accent shadow-[0_0_10px_#2dd4bf]':'bg-red-500 shadow-[0_0_10px_red]'}"></div><span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">${msg}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(()=>toast.remove(), 500); }, 3000);
         };
 
-        // UI Handlers
         window.showView = (v) => {
             ['home', 'samples', 'viewer', 'admin'].forEach(view => document.getElementById(`view-${view}`).classList.add('hidden'));
             document.getElementById(`view-${v}`).classList.remove('hidden');
+            window.scrollTo(0,0);
         };
 
         window.requestAdminAccess = () => {
-            const p = prompt("Acceso Vextli:");
-            if(p === "vextli") { showView('admin'); showToast("Admin Logged In"); }
+            const pass = prompt("Identificación Vextli:");
+            if(pass && pass.toLowerCase() === "vextli") showView('admin');
         };
-
-        // --- CRUD OPERATIONS ---
 
         window.addBrand = async () => {
-            const input = document.getElementById('admin-brand-input');
-            const name = input.value.trim();
+            const name = document.getElementById('admin-brand-input').value.trim();
             if(!name) return;
-            const id = 'brand_' + Date.now();
-            try {
-                await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id), {
-                    id, name, samples: [], createdAt: Date.now()
-                });
-                input.value = '';
-                showToast(`Empresa "${name}" creada`);
-            } catch(e) { showToast("Error al crear empresa", "error"); }
+            const id = 'b_' + Date.now();
+            await setDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id), { id, name, samples: [], createdAt: Date.now() });
+            document.getElementById('admin-brand-input').value = '';
+            showToast("Partner Creado");
         };
 
-        // ELIMINAR EMPRESA RESILIENTE (Ignora archivos inexistentes)
-        window.deleteBrand = async (brandId) => {
-            if(!confirm("¿Eliminar esta empresa y todos sus prototipos asociados?")) return;
-            try {
-                const brand = brandsData.find(b => b.id === brandId);
-                
-                // 1. Intentamos borrar archivos 3D de forma segura
-                if(brand && brand.samples && brand.samples.length > 0) {
-                    const deletePromises = brand.samples.map(async (s) => {
-                        try {
-                            // Intentamos borrar el archivo, si falla (no existe), no pasa nada
-                            await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', s.id));
-                        } catch (err) {
-                            console.warn(`Archivo ${s.id} no encontrado o ya borrado.`);
-                        }
-                    });
-                    await Promise.all(deletePromises);
-                }
-
-                // 2. Borramos el documento de la empresa
-                await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId));
-                showToast("Empresa eliminada por completo");
-            } catch(e) {
-                console.error("Error crítico al eliminar empresa:", e);
-                // Si falla el borrado completo por un error de referencia, intentamos borrar solo el doc de la marca como último recurso
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId));
-                    showToast("Empresa eliminada (limpieza manual necesaria)");
-                } catch(lastErr) {
-                    showToast("Error persistente en Firebase", "error");
-                }
-            }
-        };
-
-        // ELIMINAR PROTOTIPO RESILIENTE
-        window.deleteSample = async (brandId, sampleId) => {
-            if(!confirm("¿Eliminar este prototipo?")) return;
-            try {
-                const brand = brandsData.find(b => b.id === brandId);
-                if (!brand) return;
-                
-                const sample = brand.samples.find(s => s.id === sampleId);
-                
-                // Borrado del archivo 3D (con catch silencioso por si no existe)
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sampleId));
-                } catch(e) {
-                    console.warn("El archivo físico ya no existía.");
-                }
-
-                // Actualización del documento de la marca (quitar de la lista)
-                if (sample) {
-                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                        samples: arrayRemove(sample)
-                    });
-                } else {
-                    // Fallback: Si el objeto sample no está completo, filtramos manualmente
-                    const newSamples = brand.samples.filter(s => s.id !== sampleId);
-                    await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), {
-                        samples: newSamples
-                    });
-                }
-                
-                showToast("Prototipo borrado");
-            } catch(e) { 
-                console.error(e);
-                showToast("Error al borrar el prototipo", "error"); 
+        window.deleteBrand = async (id) => {
+            if(confirm("¿Eliminar partner permanentemente?")) {
+                await deleteDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', id));
+                showToast("Partner Eliminado", "error");
             }
         };
 
         window.openBrand = (brand) => {
             document.getElementById('brand-title').innerText = brand.name;
             const grid = document.getElementById('samples-grid');
-            grid.innerHTML = brand.samples.length ? brand.samples.map(s => `
-                <div class="glass-card p-6 rounded-3xl cursor-pointer hover:border-accent/40" onclick='openViewer(${JSON.stringify(s)})'>
-                    <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-4"><i class="fas fa-cube text-accent"></i></div>
-                    <h4 class="font-black italic uppercase">${s.name}</h4>
-                    <p class="text-xs text-slate-500 mt-1">${s.date || ''}</p>
+            grid.innerHTML = brand.samples && brand.samples.length ? brand.samples.map(s => `
+                <div class="bento-card p-6 md:p-10 cursor-pointer group" onclick='openViewer(${JSON.stringify(s)})'>
+                    <div>
+                        <div class="text-[8px] md:text-[9px] font-black text-accent uppercase tracking-[0.3em] md:tracking-[0.4em] mb-2 md:mb-4">${s.date}</div>
+                        <h4 class="text-xl md:text-2xl font-black italic uppercase group-hover:text-accent transition-colors text-white">${s.name}</h4>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-[8px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest italic group-hover:translate-x-1 transition-transform">Ver <i class="fas fa-chevron-right ml-2 text-[8px]"></i></span>
+                        <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-white/5 flex items-center justify-center group-hover:bg-white transition-all">
+                            <i class="fas fa-expand text-white group-hover:text-black text-xs"></i>
+                        </div>
+                    </div>
                 </div>
-            `).join('') : '<div class="col-span-full py-20 text-center text-slate-600">No hay prototipos</div>';
+            `).join('') : '<div class="col-span-full py-20 text-center text-slate-600 font-bold uppercase text-[10px] tracking-widest">Sin prototipos publicados</div>';
             showView('samples');
         };
 
@@ -359,28 +396,23 @@
             showView('viewer');
             const loader = document.getElementById('loading-indicator');
             document.getElementById('sample-name-viewer').innerText = sample.name;
-            document.getElementById('sample-desc-viewer').innerText = sample.desc || '';
+            document.getElementById('sample-desc-viewer').innerText = sample.desc || 'No se han adjuntado especificaciones técnicas adicionales para esta pieza.';
             loader.classList.remove('hidden');
             try {
                 const f = await getDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'files', sample.id));
                 if(f.exists()) {
                     const mv = document.getElementById('mv-container');
                     mv.src = f.data().fileData;
-                    mv.addEventListener('load', () => loader.classList.add('hidden'), {once: true});
-                } else {
-                    loader.classList.add('hidden');
-                    showToast("El archivo 3D no existe", "error");
+                    mv.addEventListener('load', () => {
+                        loader.classList.add('hidden');
+                    }, {once: true});
                 }
-            } catch(e) { loader.classList.add('hidden'); showToast("Error cargando 3D", "error"); }
+            } catch(e) { loader.classList.add('hidden'); showToast("Fallo en sincronización", "error"); }
         };
 
-        // Auth & Sync
         signInAnonymously(auth).then(() => {
             onAuthStateChanged(auth, (user) => {
                 if(user) {
-                    document.getElementById('status-dot').classList.replace('bg-slate-600', 'bg-accent');
-                    document.getElementById('auth-status').innerText = "Online";
-                    
                     onSnapshot(collection(db, 'artifacts', appIdentifier, 'public', 'data', 'brands'), (snap) => {
                         brandsData = snap.docs.map(d => d.data());
                         updateUI();
@@ -391,50 +423,41 @@
         });
 
         function updateUI() {
-            // Home Grid
-            document.getElementById('brands-grid').innerHTML = brandsData.map(b => `
-                <div class="glass-card p-8 rounded-[2rem] cursor-pointer group" onclick='openBrand(${JSON.stringify(b)})'>
-                    <div class="flex justify-between items-center mb-6">
-                        <i class="far fa-building text-slate-500 group-hover:text-accent transition-colors"></i>
-                        <span class="text-[10px] font-bold text-slate-600 uppercase">${b.samples?.length || 0} Modelos</span>
+            const grid = document.getElementById('brands-grid');
+            grid.innerHTML = brandsData.map((b) => `
+                <div class="bento-card p-6 md:p-10 cursor-pointer group" onclick='openBrand(${JSON.stringify(b)})'>
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center mb-6 md:mb-10 border border-white/10 group-hover:border-accent/40 transition-all">
+                        <i class="fas fa-fingerprint text-slate-500 group-hover:text-accent text-sm md:text-base"></i>
                     </div>
-                    <h3 class="font-black italic text-xl">${b.name}</h3>
+                    <div>
+                        <h3 class="text-xl md:text-2xl font-black italic uppercase mb-1 md:mb-2 group-hover:translate-x-1 transition-transform text-white">${b.name}</h3>
+                        <div class="flex items-center gap-2 md:gap-3">
+                            <div class="h-px w-6 md:w-8 bg-accent/30"></div>
+                            <span class="text-[8px] md:text-[9px] font-black uppercase text-slate-500 tracking-widest">${b.samples?.length || 0} Prototipos</span>
+                        </div>
+                    </div>
                 </div>
             `).join('');
 
-            // Admin List (System of folders)
             document.getElementById('admin-brands-list').innerHTML = brandsData.map(b => `
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 overflow-hidden">
-                    <div class="p-4 bg-slate-800/50 flex justify-between items-center">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-300">${b.name}</span>
-                        <button onclick="deleteBrand('${b.id}')" class="text-slate-500 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    <div class="p-3 space-y-2">
-                        ${b.samples.map(s => `
-                            <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-white/5 group">
-                                <span class="text-[11px] font-medium text-slate-400">${s.name}</span>
-                                <button onclick="deleteSample('${b.id}', '${s.id}')" class="text-slate-700 hover:text-orange-400 opacity-0 group-hover:opacity-100 transition-all"><i class="fas fa-times"></i></button>
-                            </div>
-                        `).join('')}
-                    </div>
+                <div class="bg-black/40 border border-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl flex justify-between items-center group">
+                    <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white truncate mr-2">${b.name}</span>
+                    <button onclick="deleteBrand('${b.id}')" class="text-slate-700 hover:text-red-500 transition-colors px-2"><i class="fas fa-trash-alt text-xs"></i></button>
                 </div>
             `).join('');
 
-            // Update Select & Stats
             document.getElementById('admin-select-brand').innerHTML = brandsData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            document.getElementById('stat-brands').innerText = brandsData.length;
         }
 
-        // Upload Logic
         document.getElementById('admin-sample-form').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('admin-submit-btn');
             const file = document.getElementById('admin-file').files[0];
             const brandId = document.getElementById('admin-select-brand').value;
-            if(!file || !brandId) return;
+            if(!file || !brandId) return showToast("Falta archivo .GLB", "error");
 
             btn.disabled = true;
-            btn.innerText = "Subiendo...";
+            btn.innerText = "Sincronizando Malla...";
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
@@ -445,17 +468,25 @@
                         id: sampleId,
                         name: document.getElementById('admin-sample-name').value,
                         desc: document.getElementById('admin-sample-desc').value,
-                        date: new Date().toLocaleDateString()
+                        date: new Date().toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase()
                     };
                     await updateDoc(doc(db, 'artifacts', appIdentifier, 'public', 'data', 'brands', brandId), { samples: arrayUnion(meta) });
-                    showToast("Prototipo cargado");
+                    showToast("Prototipo Publicado");
                     e.target.reset();
-                } catch(e) { showToast("Error al subir", "error"); }
-                btn.disabled = false;
-                btn.innerText = "Subir Prototipo";
+                } catch(e) { showToast("Error en servidor", "error"); }
+                btn.disabled = false; btn.innerText = "Publicar Prototipo";
             };
             reader.readAsDataURL(file);
         };
+
+        document.addEventListener('mousemove', e => {
+            if (window.innerWidth < 768) return;
+            document.querySelectorAll('.bento-card').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                card.style.setProperty('--x', `${e.clientX - rect.left}px`);
+                card.style.setProperty('--y', `${e.clientY - rect.top}px`);
+            });
+        });
     </script>
 </body>
 </html>
